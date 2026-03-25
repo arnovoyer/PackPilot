@@ -1,0 +1,6 @@
+R_DEF: Internal format may change without notice
+local
+color seed_green
+string app_name
+style Theme.PackApp
+xml backup_rules

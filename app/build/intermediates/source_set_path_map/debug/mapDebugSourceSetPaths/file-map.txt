@@ -1,0 +1,72 @@
+com.packapp-ui-test-manifest-1.6.8-0 C:\Users\Arnov\.gradle\caches\transforms-4\009ec5d7086fe84d3b090dde992146bb\transformed\ui-test-manifest-1.6.8\res
+com.packapp-material3-release-1 C:\Users\Arnov\.gradle\caches\transforms-4\062f5e1bd6ded40d157f4d9f38483679\transformed\material3-release\res
+com.packapp-lifecycle-viewmodel-release-2 C:\Users\Arnov\.gradle\caches\transforms-4\08c2202fed08bff0c9f787a2ad6d8cc0\transformed\lifecycle-viewmodel-release\res
+com.packapp-sqlite-2.4.0-3 C:\Users\Arnov\.gradle\caches\transforms-4\0b5d5a31a059b510150858f36abada49\transformed\sqlite-2.4.0\res
+com.packapp-emoji2-views-helper-1.3.0-4 C:\Users\Arnov\.gradle\caches\transforms-4\0b7f23e6ff4b61926becb6bf2452260b\transformed\emoji2-views-helper-1.3.0\res
+com.packapp-lifecycle-runtime-compose-release-5 C:\Users\Arnov\.gradle\caches\transforms-4\0e00807d3a7eda523e8eac7ee7db80f6\transformed\lifecycle-runtime-compose-release\res
+com.packapp-coordinatorlayout-1.1.0-6 C:\Users\Arnov\.gradle\caches\transforms-4\1202c3189f53ec3bf7089ef95df1d64e\transformed\coordinatorlayout-1.1.0\res
+com.packapp-lifecycle-process-2.8.3-7 C:\Users\Arnov\.gradle\caches\transforms-4\159dc62f4106d196b92c60aa71e067fd\transformed\lifecycle-process-2.8.3\res
+com.packapp-cardview-1.0.0-8 C:\Users\Arnov\.gradle\caches\transforms-4\1a99fe36799a40e69e1b025e3b7b4e6d\transformed\cardview-1.0.0\res
+com.packapp-customview-poolingcontainer-1.0.0-9 C:\Users\Arnov\.gradle\caches\transforms-4\1dc8e30dabf7162632c50327f0439d5f\transformed\customview-poolingcontainer-1.0.0\res
+com.packapp-foundation-layout-release-10 C:\Users\Arnov\.gradle\caches\transforms-4\1f13812e20f019ec2aaa39f82f96aab2\transformed\foundation-layout-release\res
+com.packapp-ui-release-11 C:\Users\Arnov\.gradle\caches\transforms-4\20d8d3985f0cbad7bd83ee9d7df7013c\transformed\ui-release\res
+com.packapp-sqlite-framework-2.4.0-12 C:\Users\Arnov\.gradle\caches\transforms-4\286495f9ab3b8a1d51aaededf06545ad\transformed\sqlite-framework-2.4.0\res
+com.packapp-constraintlayout-2.0.1-13 C:\Users\Arnov\.gradle\caches\transforms-4\29d7ade01b560a9c08e2e93b4ba363e7\transformed\constraintlayout-2.0.1\res
+com.packapp-lifecycle-runtime-release-14 C:\Users\Arnov\.gradle\caches\transforms-4\2ce4c8aff126c0213994d1a312c87956\transformed\lifecycle-runtime-release\res
+com.packapp-room-runtime-2.6.1-15 C:\Users\Arnov\.gradle\caches\transforms-4\2d503d6f1cf6a256bd6fcbe79f6fbb71\transformed\room-runtime-2.6.1\res
+com.packapp-material-icons-extended-release-16 C:\Users\Arnov\.gradle\caches\transforms-4\360c85cc54449e2d1cc4c3af54532a74\transformed\material-icons-extended-release\res
+com.packapp-lifecycle-livedata-core-ktx-2.8.3-17 C:\Users\Arnov\.gradle\caches\transforms-4\3685ed2ee8c2a00c7a543a0f6a504cc0\transformed\lifecycle-livedata-core-ktx-2.8.3\res
+com.packapp-navigation-common-2.7.7-18 C:\Users\Arnov\.gradle\caches\transforms-4\386adc10ae53a2db250238a9b4216433\transformed\navigation-common-2.7.7\res
+com.packapp-appcompat-resources-1.6.1-19 C:\Users\Arnov\.gradle\caches\transforms-4\39d4aca9f6dc5459647f741289a86f7a\transformed\appcompat-resources-1.6.1\res
+com.packapp-lifecycle-livedata-2.8.3-20 C:\Users\Arnov\.gradle\caches\transforms-4\4964676477d48b964f23a1af972ee840\transformed\lifecycle-livedata-2.8.3\res
+com.packapp-viewpager2-1.0.0-21 C:\Users\Arnov\.gradle\caches\transforms-4\4fa43982285f3f400ebe32e299e55c16\transformed\viewpager2-1.0.0\res
+com.packapp-room-ktx-2.6.1-22 C:\Users\Arnov\.gradle\caches\transforms-4\50cee8a94838d205634b60142f514e9f\transformed\room-ktx-2.6.1\res
+com.packapp-appcompat-1.6.1-23 C:\Users\Arnov\.gradle\caches\transforms-4\60a4ca374d76ab620d05addfd54e3fb7\transformed\appcompat-1.6.1\res
+com.packapp-activity-compose-1.9.1-24 C:\Users\Arnov\.gradle\caches\transforms-4\632f8b3815d78772af8a3a245b20d6e4\transformed\activity-compose-1.9.1\res
+com.packapp-ui-geometry-release-25 C:\Users\Arnov\.gradle\caches\transforms-4\64fc25be84ccabfe949164eaa273a818\transformed\ui-geometry-release\res
+com.packapp-ui-tooling-release-26 C:\Users\Arnov\.gradle\caches\transforms-4\6556b19a5f80b0dadd76431b50935d2f\transformed\ui-tooling-release\res
+com.packapp-activity-ktx-1.9.1-27 C:\Users\Arnov\.gradle\caches\transforms-4\69871b2e5e5366d27ff1c402632b61bb\transformed\activity-ktx-1.9.1\res
+com.packapp-material-ripple-release-28 C:\Users\Arnov\.gradle\caches\transforms-4\6a2712f989f86c9a37628d1d2545e934\transformed\material-ripple-release\res
+com.packapp-fragment-1.3.6-29 C:\Users\Arnov\.gradle\caches\transforms-4\6b13f536271460765b9b6aea504c4032\transformed\fragment-1.3.6\res
+com.packapp-core-1.13.1-30 C:\Users\Arnov\.gradle\caches\transforms-4\7681f93c1e3044001310bbe900eb6d81\transformed\core-1.13.1\res
+com.packapp-runtime-release-31 C:\Users\Arnov\.gradle\caches\transforms-4\7be52d979646745b76aa7f265c7fd8a8\transformed\runtime-release\res
+com.packapp-ui-graphics-release-32 C:\Users\Arnov\.gradle\caches\transforms-4\7e634bbb7bbc03fc0ab41c6e1d658120\transformed\ui-graphics-release\res
+com.packapp-navigation-runtime-ktx-2.7.7-33 C:\Users\Arnov\.gradle\caches\transforms-4\81a09b77ed516cc7046392e965b5c223\transformed\navigation-runtime-ktx-2.7.7\res
+com.packapp-animation-core-release-34 C:\Users\Arnov\.gradle\caches\transforms-4\8b73ba6f36cf7e25b7297d34d574f910\transformed\animation-core-release\res
+com.packapp-emoji2-1.3.0-35 C:\Users\Arnov\.gradle\caches\transforms-4\8f29b9911b835af70275faff3be033b8\transformed\emoji2-1.3.0\res
+com.packapp-recyclerview-1.1.0-36 C:\Users\Arnov\.gradle\caches\transforms-4\8ffa469f521c8d4c497540b723ba2639\transformed\recyclerview-1.1.0\res
+com.packapp-runtime-saveable-release-37 C:\Users\Arnov\.gradle\caches\transforms-4\93c57587cbfa7d0008c10dfbfe9e2748\transformed\runtime-saveable-release\res
+com.packapp-lifecycle-livedata-core-2.8.3-38 C:\Users\Arnov\.gradle\caches\transforms-4\95829535851eea3968b301abc5bb0360\transformed\lifecycle-livedata-core-2.8.3\res
+com.packapp-navigation-common-ktx-2.7.7-39 C:\Users\Arnov\.gradle\caches\transforms-4\a02b7b7e888b80c9e8db94bc14fff4fb\transformed\navigation-common-ktx-2.7.7\res
+com.packapp-navigation-runtime-2.7.7-40 C:\Users\Arnov\.gradle\caches\transforms-4\a306fff895b7d931dc656679a7d92137\transformed\navigation-runtime-2.7.7\res
+com.packapp-ui-util-release-41 C:\Users\Arnov\.gradle\caches\transforms-4\a42319fee9f94570d90d29d85f10001d\transformed\ui-util-release\res
+com.packapp-foundation-release-42 C:\Users\Arnov\.gradle\caches\transforms-4\a869f25a1500a3f0b509cb980d26c93c\transformed\foundation-release\res
+com.packapp-annotation-experimental-1.4.0-43 C:\Users\Arnov\.gradle\caches\transforms-4\a93256f88b317112ebc92a8e254d0f22\transformed\annotation-experimental-1.4.0\res
+com.packapp-core-ktx-1.13.1-44 C:\Users\Arnov\.gradle\caches\transforms-4\af17bc556513c8f070873f7e1fddb044\transformed\core-ktx-1.13.1\res
+com.packapp-lifecycle-runtime-ktx-release-45 C:\Users\Arnov\.gradle\caches\transforms-4\b01390ba98d14aeae11dacb4fcf9fbea\transformed\lifecycle-runtime-ktx-release\res
+com.packapp-activity-1.9.1-46 C:\Users\Arnov\.gradle\caches\transforms-4\b70e50c860387342f5f6ee333d089871\transformed\activity-1.9.1\res
+com.packapp-savedstate-ktx-1.2.1-47 C:\Users\Arnov\.gradle\caches\transforms-4\b7fce40db1364727d6aa514f86567210\transformed\savedstate-ktx-1.2.1\res
+com.packapp-ui-tooling-data-release-48 C:\Users\Arnov\.gradle\caches\transforms-4\bfdae020f08f5c7a15d409f601e12306\transformed\ui-tooling-data-release\res
+com.packapp-ui-text-release-49 C:\Users\Arnov\.gradle\caches\transforms-4\ca12497084a0c322d7eb2a6653cde026\transformed\ui-text-release\res
+com.packapp-animation-release-50 C:\Users\Arnov\.gradle\caches\transforms-4\cad30a44ad4773f324064a26c1f997dc\transformed\animation-release\res
+com.packapp-ui-unit-release-51 C:\Users\Arnov\.gradle\caches\transforms-4\cadbb3a6df7bfff3b774c941348ba4c7\transformed\ui-unit-release\res
+com.packapp-transition-1.5.0-52 C:\Users\Arnov\.gradle\caches\transforms-4\cbebf89f1b8aea67c16cfb7c10b6d522\transformed\transition-1.5.0\res
+com.packapp-savedstate-1.2.1-53 C:\Users\Arnov\.gradle\caches\transforms-4\d2626292ce3e742aad5ca81d24bf4149\transformed\savedstate-1.2.1\res
+com.packapp-lifecycle-viewmodel-ktx-2.8.3-54 C:\Users\Arnov\.gradle\caches\transforms-4\d2b9a110144dea09dae5909c5437dd3e\transformed\lifecycle-viewmodel-ktx-2.8.3\res
+com.packapp-drawerlayout-1.1.1-55 C:\Users\Arnov\.gradle\caches\transforms-4\e0d1c26dfe58a5f2e1b811f0ab3ac0ee\transformed\drawerlayout-1.1.1\res
+com.packapp-startup-runtime-1.1.1-56 C:\Users\Arnov\.gradle\caches\transforms-4\e1264640b11df0d7be041ef33f9b3b79\transformed\startup-runtime-1.1.1\res
+com.packapp-profileinstaller-1.3.1-57 C:\Users\Arnov\.gradle\caches\transforms-4\e71fda038bd0ffa18f708986e1fddebe\transformed\profileinstaller-1.3.1\res
+com.packapp-material-icons-core-release-58 C:\Users\Arnov\.gradle\caches\transforms-4\e91cd9ee08678d1ad71f7d40cc6c62ff\transformed\material-icons-core-release\res
+com.packapp-core-runtime-2.2.0-59 C:\Users\Arnov\.gradle\caches\transforms-4\e9dcff79202d9a16c4a2adb7a88810b8\transformed\core-runtime-2.2.0\res
+com.packapp-material-release-60 C:\Users\Arnov\.gradle\caches\transforms-4\ea3d3ea3e0c0914e599b9f7e7b773b23\transformed\material-release\res
+com.packapp-material-1.12.0-61 C:\Users\Arnov\.gradle\caches\transforms-4\eacf41ae23b62c1aa3a18b0e7996d3de\transformed\material-1.12.0\res
+com.packapp-navigation-compose-2.7.7-62 C:\Users\Arnov\.gradle\caches\transforms-4\eee4aae848aacb52866bcf66c47169bc\transformed\navigation-compose-2.7.7\res
+com.packapp-ui-tooling-preview-release-63 C:\Users\Arnov\.gradle\caches\transforms-4\f099d99da079432a687030b7726d2a24\transformed\ui-tooling-preview-release\res
+com.packapp-lifecycle-viewmodel-savedstate-2.8.3-64 C:\Users\Arnov\.gradle\caches\transforms-4\f32c6f8f942ab98fe627cd4572c14d99\transformed\lifecycle-viewmodel-savedstate-2.8.3\res
+com.packapp-lifecycle-viewmodel-compose-release-65 C:\Users\Arnov\.gradle\caches\transforms-4\f688ff2a7ded3aec4773b76dbf1cd88c\transformed\lifecycle-viewmodel-compose-release\res
+com.packapp-resValues-66 C:\Users\Arnov\OneDrive - BRG Schoren\Coding\PackApp\app\build\generated\res\resValues\debug
+com.packapp-packageDebugResources-67 C:\Users\Arnov\OneDrive - BRG Schoren\Coding\PackApp\app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
+com.packapp-packageDebugResources-68 C:\Users\Arnov\OneDrive - BRG Schoren\Coding\PackApp\app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
+com.packapp-debug-69 C:\Users\Arnov\OneDrive - BRG Schoren\Coding\PackApp\app\build\intermediates\merged_res\debug\mergeDebugResources
+com.packapp-debug-70 C:\Users\Arnov\OneDrive - BRG Schoren\Coding\PackApp\app\src\debug\res
+com.packapp-main-71 C:\Users\Arnov\OneDrive - BRG Schoren\Coding\PackApp\app\src\main\res

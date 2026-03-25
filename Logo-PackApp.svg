@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Ebene_1" data-name="Ebene 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #202020;
+      }
+
+      .cls-2 {
+        fill: #9ba89e;
+      }
+
+      .cls-3 {
+        stroke-width: 22px;
+      }
+
+      .cls-3, .cls-4, .cls-5 {
+        fill: none;
+        stroke: #9ba89e;
+      }
+
+      .cls-3, .cls-5 {
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .cls-4 {
+        stroke-miterlimit: 10;
+      }
+
+      .cls-4, .cls-5 {
+        stroke-width: 14px;
+      }
+    </style>
+  </defs>
+  <rect class="cls-1" x="-178.4" y="-48.7" width="1124.43" height="885.45"/>
+  <rect class="cls-4" x="126.41" y="100" width="600" height="600" rx="44" ry="44"/>
+  <polyline class="cls-5" points="200.49 231.83 223.98 255.32 283.09 196.21"/>
+  <path class="cls-2" d="M301.79,165.77v120h-120v-120h120M301.79,157.77h-120c-4.42,0-8,3.58-8,8v120c0,4.42,3.58,8,8,8h120c4.42,0,8-3.58,8-8v-120c0-4.42-3.58-8-8-8h0Z"/>
+  <path class="cls-2" d="M301.79,337.6v120h-120v-120h120M301.79,329.6h-120c-4.42,0-8,3.58-8,8v120c0,4.42,3.58,8,8,8h120c4.42,0,8-3.58,8-8v-120c0-4.42-3.58-8-8-8h0Z"/>
+  <path class="cls-2" d="M301.79,509.43v120h-120v-120h120M301.79,501.43h-120c-4.42,0-8,3.58-8,8v120c0,4.42,3.58,8,8,8h120c4.42,0,8-3.58,8-8v-120c0-4.42-3.58-8-8-8h0Z"/>
+  <line class="cls-3" x1="342.7" y1="225.77" x2="667.47" y2="225.77"/>
+  <line class="cls-3" x1="342.7" y1="397.6" x2="558.96" y2="397.6"/>
+  <line class="cls-3" x1="342.7" y1="569.43" x2="629.43" y2="569.43"/>
+  <polyline class="cls-5" points="200.49 403.66 223.98 427.15 283.09 368.04"/>
+</svg>
