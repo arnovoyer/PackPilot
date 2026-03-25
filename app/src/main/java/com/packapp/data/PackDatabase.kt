@@ -13,9 +13,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         PackingItemEntity::class,
         ActivityEventEntity::class,
         PackingSessionEntity::class,
-        TripEntity::class
+        TripEntity::class,
+        WeatherCacheEntity::class
     ],
-    version = 4,
+    version = 6,
     exportSchema = false
 )
 abstract class PackDatabase : RoomDatabase() {
@@ -86,6 +87,35 @@ abstract class PackDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS weather_cache (
+                        locationKey TEXT NOT NULL PRIMARY KEY,
+                        locationLabel TEXT NOT NULL,
+                        fetchedAt INTEGER NOT NULL,
+                        expiresAt INTEGER NOT NULL,
+                        latitude REAL NOT NULL,
+                        longitude REAL NOT NULL,
+                        temperatureMinC REAL NOT NULL,
+                        temperatureMaxC REAL NOT NULL,
+                        precipitationProbabilityMax INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE packing_lists ADD COLUMN weatherLocation TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE packing_lists ADD COLUMN remindersEnabled INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE packing_lists ADD COLUMN reminderHour INTEGER NOT NULL DEFAULT 19")
+                db.execSQL("ALTER TABLE packing_lists ADD COLUMN reminderMinute INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         fun getInstance(context: Context): PackDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -93,7 +123,7 @@ abstract class PackDatabase : RoomDatabase() {
                     PackDatabase::class.java,
                     "pack_app.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .build()
                 INSTANCE = instance
                 instance

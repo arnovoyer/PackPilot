@@ -10,6 +10,8 @@ import com.packapp.data.PackingItemEntity
 import com.packapp.data.PackingListEntity
 import com.packapp.data.PackingListSummary
 import com.packapp.data.TripEntity
+import com.packapp.data.WeatherSnapshot
+import com.packapp.reminder.ReminderScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -76,7 +78,11 @@ data class DetailUiState(
     val totalWeight: Int = 0,
     val currentSessionId: Long? = null,
     val currentSessionStartTime: Long? = null,
-    val showSpeedrunToggle: Boolean = false
+    val showSpeedrunToggle: Boolean = false,
+    val weather: WeatherSnapshot? = null,
+    val weatherSuggestions: List<String> = emptyList(),
+    val weatherLoading: Boolean = false,
+    val weatherError: String? = null
 ) {
     val isComplete: Boolean = totalCount > 0 && packedCount == totalCount
     
@@ -144,6 +150,7 @@ private data class PerformanceMetrics(
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AppViewModel(application: Application) : AndroidViewModel(application) {
+    private val app = application
     private val prefs = application.getSharedPreferences("packapp_prefs", Application.MODE_PRIVATE)
     private val repository = PackRepository(PackDatabase.getInstance(application).packDao())
 
@@ -171,6 +178,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     private val homeInputState = MutableStateFlow(HomeUiState())
     private val detailInputState = MutableStateFlow(DetailUiState())
+
+    init {
+        synchronizeAllReminderWorkers()
+    }
 
     val homeUiState: StateFlow<HomeUiState> = combine(
         repository.observeListSummaries(),
@@ -356,6 +367,76 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         prefs.edit().putInt("luggage_limit_kg", safeValue).apply()
     }
 
+    fun setRemindersEnabled(enabled: Boolean) {
+        val list = detailUiState.value.list ?: return
+        saveCurrentListAutomationSettings(
+            weatherLocation = list.weatherLocation,
+            remindersEnabled = enabled,
+            reminderHour = list.reminderHour,
+            reminderMinute = list.reminderMinute
+        )
+    }
+
+    fun setReminderTime(hour: Int, minute: Int) {
+        val list = detailUiState.value.list ?: return
+        saveCurrentListAutomationSettings(
+            weatherLocation = list.weatherLocation,
+            remindersEnabled = list.remindersEnabled,
+            reminderHour = hour,
+            reminderMinute = minute
+        )
+    }
+
+    fun setWeatherLocation(value: String) {
+        val list = detailUiState.value.list ?: return
+        saveCurrentListAutomationSettings(
+            weatherLocation = value,
+            remindersEnabled = list.remindersEnabled,
+            reminderHour = list.reminderHour,
+            reminderMinute = list.reminderMinute
+        )
+    }
+
+    fun refreshWeather(forceRefresh: Boolean = false) {
+        viewModelScope.launch {
+            val selectedListId = selectedListIdMutable.value
+            val list = detailUiState.value.list ?: selectedListId?.let { repository.getListById(it) }
+            val location = list?.weatherLocation?.trim().orEmpty()
+            if (location.isBlank()) {
+                detailInputState.update {
+                    it.copy(
+                        weather = null,
+                        weatherSuggestions = emptyList(),
+                        weatherError = "Bitte in dieser Packliste einen Ort setzen."
+                    )
+                }
+                return@launch
+            }
+
+            detailInputState.update { it.copy(weatherLoading = true, weatherError = null) }
+            val weather = repository.getWeatherForLocation(location, forceRefresh)
+            if (weather == null) {
+                detailInputState.update {
+                    it.copy(
+                        weatherLoading = false,
+                        weather = null,
+                        weatherSuggestions = emptyList(),
+                        weatherError = "Wetterdaten konnten nicht geladen werden."
+                    )
+                }
+            } else {
+                detailInputState.update {
+                    it.copy(
+                        weatherLoading = false,
+                        weather = weather,
+                        weatherSuggestions = repository.suggestItemsFromWeather(weather),
+                        weatherError = null
+                    )
+                }
+            }
+        }
+    }
+
     fun dismissOnboarding() {
         showOnboardingMutable.value = false
         prefs.edit().putBoolean("onboarding_seen", true).apply()
@@ -422,11 +503,20 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun openList(listId: Long) {
         selectedListIdMutable.value = listId
         selectedTabMutable.value = BottomTab.PACKING
+        refreshWeather(forceRefresh = false)
     }
 
     fun closeList() {
         selectedListIdMutable.value = null
-        detailInputState.update { it.copy(newItemTitle = "") }
+        detailInputState.update {
+            it.copy(
+                newItemTitle = "",
+                weather = null,
+                weatherSuggestions = emptyList(),
+                weatherLoading = false,
+                weatherError = null
+            )
+        }
         selectedTabMutable.value = BottomTab.LISTS
     }
 
@@ -523,6 +613,60 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     currentSessionId = null,
                     currentSessionStartTime = null
                 )
+            }
+        }
+    }
+
+    private fun rescheduleReminderWorker() {
+        // no-op: reminders are scheduled per list
+    }
+
+    fun saveCurrentListAutomationSettings(
+        weatherLocation: String,
+        remindersEnabled: Boolean,
+        reminderHour: Int,
+        reminderMinute: Int
+    ) {
+        val listId = selectedListIdMutable.value ?: return
+        viewModelScope.launch {
+            val updated = repository.updateListAutomationSettings(
+                listId = listId,
+                weatherLocation = weatherLocation,
+                remindersEnabled = remindersEnabled,
+                reminderHour = reminderHour,
+                reminderMinute = reminderMinute
+            ) ?: return@launch
+
+            if (updated.remindersEnabled) {
+                ReminderScheduler.scheduleForList(
+                    app,
+                    listId = updated.id,
+                    listName = updated.name,
+                    hour = updated.reminderHour,
+                    minute = updated.reminderMinute
+                )
+            } else {
+                ReminderScheduler.cancelForList(app, updated.id)
+            }
+
+            refreshWeather(forceRefresh = false)
+        }
+    }
+
+    private fun synchronizeAllReminderWorkers() {
+        viewModelScope.launch {
+            repository.getAllListsOnce().forEach { list ->
+                if (list.remindersEnabled) {
+                    ReminderScheduler.scheduleForList(
+                        app,
+                        listId = list.id,
+                        listName = list.name,
+                        hour = list.reminderHour,
+                        minute = list.reminderMinute
+                    )
+                } else {
+                    ReminderScheduler.cancelForList(app, list.id)
+                }
             }
         }
     }

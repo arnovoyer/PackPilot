@@ -39,6 +39,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Switch
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -79,6 +80,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.packapp.data.ActivityEventEntity
 import com.packapp.data.PackingItemEntity
 import com.packapp.data.PackingListEntity
+import com.packapp.data.WeatherSnapshot
 import com.packapp.ui.theme.PackPilotTheme
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -175,7 +177,9 @@ fun PackPilotRoot(viewModel: AppViewModel = viewModel()) {
                     onBack = viewModel::closeList,
                     onTogglePacked = viewModel::togglePacked,
                     onSwipePacked = viewModel::markPackedBySwipe,
-                    onReset = viewModel::resetCurrentList
+                    onReset = viewModel::resetCurrentList,
+                    onRefreshWeather = { force -> viewModel.refreshWeather(forceRefresh = force) },
+                    onSaveAutomationSettings = viewModel::saveCurrentListAutomationSettings
                 )
             }
 
@@ -521,7 +525,9 @@ private fun DetailScreen(
     onBack: () -> Unit,
     onTogglePacked: (PackingItemEntity, Boolean) -> Unit,
     onSwipePacked: (PackingItemEntity) -> Unit,
-    onReset: () -> Unit
+    onReset: () -> Unit,
+    onRefreshWeather: (Boolean) -> Unit,
+    onSaveAutomationSettings: (String, Boolean, Int, Int) -> Unit
 ) {
     var showSuccess by remember(uiState.list?.id) { mutableStateOf(false) }
 
@@ -584,11 +590,84 @@ private fun DetailScreen(
             return
         }
 
+        var weatherLocation by remember(uiState.list.id) { mutableStateOf(uiState.list.weatherLocation) }
+        var remindersEnabled by remember(uiState.list.id) { mutableStateOf(uiState.list.remindersEnabled) }
+        var reminderHour by remember(uiState.list.id) { mutableStateOf(uiState.list.reminderHour.toString()) }
+        var reminderMinute by remember(uiState.list.id) { mutableStateOf(uiState.list.reminderMinute.toString()) }
+
         ProgressStrip(
             packedCount = uiState.packedCount,
             totalCount = uiState.totalCount,
             packedWeight = uiState.packedWeight,
             totalWeight = uiState.totalWeight
+        )
+
+        Surface(
+            tonalElevation = 2.dp,
+            shape = MaterialTheme.shapes.large,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text("Ort & Erinnerungen für diese Liste", style = MaterialTheme.typography.labelLarge)
+                OutlinedTextField(
+                    value = weatherLocation,
+                    onValueChange = { weatherLocation = it },
+                    label = { Text("Wetter-Ort (z. B. Wien)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Reminder aktiv")
+                    Switch(
+                        checked = remindersEnabled,
+                        onCheckedChange = { remindersEnabled = it }
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = reminderHour,
+                        onValueChange = { input -> if (input.all { it.isDigit() }) reminderHour = input },
+                        label = { Text("Stunde") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedTextField(
+                        value = reminderMinute,
+                        onValueChange = { input -> if (input.all { it.isDigit() }) reminderMinute = input },
+                        label = { Text("Minute") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                Button(
+                    onClick = {
+                        onSaveAutomationSettings(
+                            weatherLocation.trim(),
+                            remindersEnabled,
+                            reminderHour.toIntOrNull() ?: 19,
+                            reminderMinute.toIntOrNull() ?: 0
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Für diese Liste speichern")
+                }
+            }
+        }
+
+        WeatherCard(
+            weather = uiState.weather,
+            suggestions = uiState.weatherSuggestions,
+            loading = uiState.weatherLoading,
+            error = uiState.weatherError,
+            onRefresh = { onRefreshWeather(true) }
         )
 
         AnimatedVisibility(visible = uiState.items.isEmpty()) {
@@ -606,6 +685,57 @@ private fun DetailScreen(
                     onTogglePacked = { checked -> onTogglePacked(item, checked) },
                     onSwipePacked = { onSwipePacked(item) }
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WeatherCard(
+    weather: WeatherSnapshot?,
+    suggestions: List<String>,
+    loading: Boolean,
+    error: String?,
+    onRefresh: () -> Unit
+) {
+    Surface(
+        tonalElevation = 2.dp,
+        shape = MaterialTheme.shapes.large,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Wetter", style = MaterialTheme.typography.labelLarge)
+                TextButton(onClick = onRefresh) { Text("Aktualisieren") }
+            }
+
+            when {
+                loading -> Text("Lade Wetterdaten...", style = MaterialTheme.typography.bodyMedium)
+                error != null -> Text(error, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+                weather == null -> Text("Kein Wetter verfügbar.", style = MaterialTheme.typography.bodyMedium)
+                else -> {
+                    val source = if (weather.isFromCache) "(Cache)" else "(Live)"
+                    Text(
+                        "${weather.locationLabel} $source",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        "Min ${weather.temperatureMinC}°C · Max ${weather.temperatureMaxC}°C · Regen ${weather.precipitationProbabilityMax}%",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (suggestions.isNotEmpty()) {
+                        Text("Vorschläge: ${suggestions.joinToString(", ")}", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
             }
         }
     }

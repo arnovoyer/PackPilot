@@ -3,6 +3,7 @@ package com.packapp.data
 import androidx.room.Dao
 import androidx.room.Embedded
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
@@ -29,6 +30,10 @@ interface PackDao {
             packing_lists.name AS name,
             packing_lists.createdAt AS createdAt,
             packing_lists.tripId AS tripId,
+            packing_lists.weatherLocation AS weatherLocation,
+            packing_lists.remindersEnabled AS remindersEnabled,
+            packing_lists.reminderHour AS reminderHour,
+            packing_lists.reminderMinute AS reminderMinute,
             COUNT(packing_items.id) AS totalCount,
             SUM(CASE WHEN packing_items.isPacked = 1 THEN 1 ELSE 0 END) AS packedCount,
             COALESCE(
@@ -49,6 +54,9 @@ interface PackDao {
 
     @Query("SELECT * FROM packing_lists ORDER BY createdAt DESC")
     fun observeLists(): Flow<List<PackingListEntity>>
+
+    @Query("SELECT * FROM packing_lists ORDER BY createdAt DESC")
+    suspend fun getAllListsOnce(): List<PackingListEntity>
 
     @Query("SELECT * FROM packing_lists WHERE id = :listId LIMIT 1")
     fun observeList(listId: Long): Flow<PackingListEntity?>
@@ -87,8 +95,14 @@ interface PackDao {
     @Query("SELECT COUNT(*) FROM packing_items WHERE listId = :listId")
     fun observeTotalCount(listId: Long): Flow<Int>
 
+    @Query("SELECT COUNT(*) FROM packing_items WHERE listId = :listId")
+    suspend fun getTotalCountNow(listId: Long): Int
+
     @Query("SELECT COUNT(*) FROM packing_items WHERE listId = :listId AND isPacked = 1")
     fun observePackedCount(listId: Long): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM packing_items WHERE listId = :listId AND isPacked = 1")
+    suspend fun getPackedCountNow(listId: Long): Int
 
     @Query("SELECT COUNT(*) FROM packing_lists")
     fun observeListCount(): Flow<Int>
@@ -206,4 +220,11 @@ interface PackDao {
 
     @Query("SELECT AVG(endTime - startTime) FROM packing_sessions WHERE endTime IS NOT NULL")
     fun observeAverageSessionDurationMillis(): Flow<Double?>
+
+    // ===== WEATHER CACHE QUERIES =====
+    @Query("SELECT * FROM weather_cache WHERE locationKey = :locationKey LIMIT 1")
+    suspend fun getWeatherCache(locationKey: String): WeatherCacheEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertWeatherCache(cache: WeatherCacheEntity)
 }

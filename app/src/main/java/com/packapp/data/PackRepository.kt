@@ -1,13 +1,29 @@
 package com.packapp.data
 
+import com.packapp.network.OpenMeteoForecastService
+import com.packapp.network.OpenMeteoGeocodingService
 import kotlinx.coroutines.flow.Flow
+import com.packapp.network.OpenMeteoApiFactory
+import kotlin.math.roundToInt
 
-class PackRepository(private val dao: PackDao) {
+class PackRepository(
+    private val dao: PackDao,
+    private val geocodingService: OpenMeteoGeocodingService = OpenMeteoApiFactory.geocodingService,
+    private val forecastService: OpenMeteoForecastService = OpenMeteoApiFactory.forecastService
+) {
+    private companion object {
+        const val WEATHER_CACHE_TTL_MILLIS = 6 * 60 * 60 * 1000L
+    }
+
     fun observeListSummaries(): Flow<List<PackingListSummary>> = dao.observeListSummaries()
 
     fun observeLists(): Flow<List<PackingListEntity>> = dao.observeLists()
 
+    suspend fun getAllListsOnce(): List<PackingListEntity> = dao.getAllListsOnce()
+
     fun observeList(listId: Long): Flow<PackingListEntity?> = dao.observeList(listId)
+
+    suspend fun getListById(listId: Long): PackingListEntity? = dao.getListById(listId)
 
     fun observeItems(listId: Long): Flow<List<PackingItemEntity>> = dao.observeItemsForList(listId)
 
@@ -47,6 +63,24 @@ class PackRepository(private val dao: PackDao) {
             listId = list.id,
             listName = cleanName
         )
+    }
+
+    suspend fun updateListAutomationSettings(
+        listId: Long,
+        weatherLocation: String,
+        remindersEnabled: Boolean,
+        reminderHour: Int,
+        reminderMinute: Int
+    ): PackingListEntity? {
+        val list = dao.getListById(listId) ?: return null
+        val updated = list.copy(
+            weatherLocation = weatherLocation.trim(),
+            remindersEnabled = remindersEnabled,
+            reminderHour = reminderHour.coerceIn(0, 23),
+            reminderMinute = reminderMinute.coerceIn(0, 59)
+        )
+        dao.updateList(updated)
+        return updated
     }
 
     suspend fun deleteList(listId: Long) {
@@ -191,6 +225,110 @@ class PackRepository(private val dao: PackDao) {
 
     fun observeAverageSessionDurationMillis(): Flow<Double?> =
         dao.observeAverageSessionDurationMillis()
+
+    suspend fun getWeatherForLocation(location: String, forceRefresh: Boolean = false): WeatherSnapshot? {
+        val normalized = normalizeLocation(location)
+        if (normalized.isBlank()) return null
+
+        val now = System.currentTimeMillis()
+        val cached = dao.getWeatherCache(normalized)
+        if (!forceRefresh && cached != null && cached.expiresAt > now) {
+            return cached.toSnapshot(fromCache = true)
+        }
+
+        return runCatching {
+            val geocode = geocodingService.searchLocation(name = normalized)
+            val topResult = geocode.results?.firstOrNull() ?: return@runCatching cached?.toSnapshot(fromCache = true)
+
+            val forecast = forecastService.forecast(
+                latitude = topResult.latitude,
+                longitude = topResult.longitude
+            )
+
+            val daily = forecast.daily
+            val minTemp = daily?.temperatureMin?.firstOrNull()
+            val maxTemp = daily?.temperatureMax?.firstOrNull()
+            val precip = daily?.precipitationProbabilityMax?.firstOrNull()
+            if (minTemp == null || maxTemp == null || precip == null) {
+                return@runCatching cached?.toSnapshot(fromCache = true)
+            }
+
+            val locationLabel = buildString {
+                append(topResult.name)
+                if (!topResult.country.isNullOrBlank()) {
+                    append(", ")
+                    append(topResult.country)
+                }
+            }
+
+            val entity = WeatherCacheEntity(
+                locationKey = normalized,
+                locationLabel = locationLabel,
+                fetchedAt = now,
+                expiresAt = now + WEATHER_CACHE_TTL_MILLIS,
+                latitude = topResult.latitude,
+                longitude = topResult.longitude,
+                temperatureMinC = minTemp,
+                temperatureMaxC = maxTemp,
+                precipitationProbabilityMax = precip
+            )
+            dao.upsertWeatherCache(entity)
+            entity.toSnapshot(fromCache = false)
+        }.getOrNull() ?: cached?.toSnapshot(fromCache = true)
+    }
+
+    suspend fun getWeatherForTrip(tripId: Long, forceRefresh: Boolean = false): WeatherSnapshot? {
+        val trip = dao.getTripById(tripId) ?: return null
+        return getWeatherForLocation(trip.location, forceRefresh)
+    }
+
+    suspend fun getCompletionForList(listId: Long): Pair<Int, Int> {
+        val packed = dao.getPackedCountNow(listId)
+        val total = dao.getTotalCountNow(listId)
+        return packed to total
+    }
+
+    fun suggestItemsFromWeather(snapshot: WeatherSnapshot): List<String> {
+        val suggestions = linkedSetOf<String>()
+
+        if (snapshot.temperatureMaxC >= 25.0) {
+            suggestions += "Sonnencreme"
+            suggestions += "Sonnenbrille"
+            suggestions += "Shorts"
+        }
+        if (snapshot.temperatureMinC <= 5.0) {
+            suggestions += "Mütze"
+            suggestions += "Handschuhe"
+            suggestions += "Schal"
+        }
+        if (snapshot.precipitationProbabilityMax >= 40) {
+            suggestions += "Regenschirm"
+            suggestions += "Regenjacke"
+        }
+
+        if (suggestions.isEmpty()) {
+            suggestions += "Standard-Outfit"
+        }
+
+        return suggestions.toList()
+    }
+
+    private fun normalizeLocation(location: String): String =
+        location.trim().lowercase()
+
+    private fun WeatherCacheEntity.toSnapshot(fromCache: Boolean): WeatherSnapshot {
+        return WeatherSnapshot(
+            locationLabel = locationLabel,
+            latitude = latitude,
+            longitude = longitude,
+            temperatureMinC = (temperatureMinC * 10).roundToInt() / 10.0,
+            temperatureMaxC = (temperatureMaxC * 10).roundToInt() / 10.0,
+            precipitationProbabilityMax = precipitationProbabilityMax,
+            fetchedAt = fetchedAt,
+            expiresAt = expiresAt,
+            isFromCache = fromCache
+        )
+    }
 
     private suspend fun logEvent(
         eventType: String,
