@@ -316,7 +316,7 @@ private fun HomeScreen(
         if (showSearch) {
             OutlinedTextField(
                 value = uiState.searchQuery,
-                onValueChange = onSearchQueryChange,
+                onValueChange = { onSearchQueryChange(if (it.isEmpty()) it else it[0].uppercase() + it.drop(1)) },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("Listen durchsuchen") },
                 singleLine = true
@@ -453,7 +453,7 @@ private fun ListCard(
             if (editing) {
                 OutlinedTextField(
                     value = editingValue,
-                    onValueChange = onRenameInputChange,
+                    onValueChange = { onRenameInputChange(if (it.isEmpty()) it else it[0].uppercase() + it.drop(1)) },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Listenname") },
                     singleLine = true
@@ -549,37 +549,15 @@ private fun DetailScreen(
         return
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(contentPadding)
-            .padding(horizontal = 16.dp)
-            .padding(top = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        TopAppBar(
-            title = {
-                Text(
-                    text = uiState.list?.name ?: "Packen",
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            },
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
-                }
-            },
-            actions = {
-                TextButton(onClick = onReset) {
-                    Icon(Icons.Default.Refresh, contentDescription = null)
-                    Spacer(modifier = Modifier.padding(horizontal = 2.dp))
-                    Text("Reset")
-                }
-            }
-        )
-
-        if (uiState.list == null) {
+    if (uiState.list == null) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(contentPadding)
+                .padding(horizontal = 16.dp)
+                .padding(top = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             Surface(
                 tonalElevation = 2.dp,
                 shape = MaterialTheme.shapes.extraLarge,
@@ -587,98 +565,132 @@ private fun DetailScreen(
             ) {
                 EmptyState("Öffne zuerst eine Liste im Tab Listen.")
             }
-            return
+        }
+        return
+    }
+
+    var weatherLocation by remember(uiState.list.id) { mutableStateOf(uiState.list.weatherLocation) }
+    var remindersEnabled by remember(uiState.list.id) { mutableStateOf(uiState.list.remindersEnabled) }
+    var reminderHour by remember(uiState.list.id) { mutableStateOf(uiState.list.reminderHour.toString()) }
+    var reminderMinute by remember(uiState.list.id) { mutableStateOf(uiState.list.reminderMinute.toString()) }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(contentPadding),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 92.dp)
+    ) {
+        item {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = uiState.list.name,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                    }
+                },
+                actions = {
+                    TextButton(onClick = onReset) {
+                        Icon(Icons.Default.Refresh, contentDescription = null)
+                        Spacer(modifier = Modifier.padding(horizontal = 2.dp))
+                        Text("Reset")
+                    }
+                }
+            )
         }
 
-        var weatherLocation by remember(uiState.list.id) { mutableStateOf(uiState.list.weatherLocation) }
-        var remindersEnabled by remember(uiState.list.id) { mutableStateOf(uiState.list.remindersEnabled) }
-        var reminderHour by remember(uiState.list.id) { mutableStateOf(uiState.list.reminderHour.toString()) }
-        var reminderMinute by remember(uiState.list.id) { mutableStateOf(uiState.list.reminderMinute.toString()) }
+        item {
+            ProgressStrip(
+                packedCount = uiState.packedCount,
+                totalCount = uiState.totalCount,
+                packedWeight = uiState.packedWeight,
+                totalWeight = uiState.totalWeight
+            )
+        }
 
-        ProgressStrip(
-            packedCount = uiState.packedCount,
-            totalCount = uiState.totalCount,
-            packedWeight = uiState.packedWeight,
-            totalWeight = uiState.totalWeight
-        )
-
-        Surface(
-            tonalElevation = 2.dp,
-            shape = MaterialTheme.shapes.large,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+        item {
+            Surface(
+                tonalElevation = 2.dp,
+                shape = MaterialTheme.shapes.large,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Ort & Erinnerungen für diese Liste", style = MaterialTheme.typography.labelLarge)
-                OutlinedTextField(
-                    value = weatherLocation,
-                    onValueChange = { weatherLocation = it },
-                    label = { Text("Wetter-Ort (z. B. Wien)") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text("Reminder aktiv")
-                    Switch(
-                        checked = remindersEnabled,
-                        onCheckedChange = { remindersEnabled = it }
-                    )
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Ort & Erinnerungen für diese Liste", style = MaterialTheme.typography.labelLarge)
                     OutlinedTextField(
-                        value = reminderHour,
-                        onValueChange = { input -> if (input.all { it.isDigit() }) reminderHour = input },
-                        label = { Text("Stunde") },
+                        value = weatherLocation,
+                        onValueChange = { weatherLocation = it.replaceFirstChar { c -> c.uppercase() } },
+                        label = { Text("Wetter-Ort (z. B. Wien)") },
                         singleLine = true,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxWidth()
                     )
-                    OutlinedTextField(
-                        value = reminderMinute,
-                        onValueChange = { input -> if (input.all { it.isDigit() }) reminderMinute = input },
-                        label = { Text("Minute") },
-                        singleLine = true,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                Button(
-                    onClick = {
-                        onSaveAutomationSettings(
-                            weatherLocation.trim(),
-                            remindersEnabled,
-                            reminderHour.toIntOrNull() ?: 19,
-                            reminderMinute.toIntOrNull() ?: 0
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Reminder aktiv")
+                        Switch(
+                            checked = remindersEnabled,
+                            onCheckedChange = { remindersEnabled = it }
                         )
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Für diese Liste speichern")
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = reminderHour,
+                            onValueChange = { input -> if (input.all { it.isDigit() }) reminderHour = input },
+                            label = { Text("Stunde") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = reminderMinute,
+                            onValueChange = { input -> if (input.all { it.isDigit() }) reminderMinute = input },
+                            label = { Text("Minute") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Button(
+                        onClick = {
+                            onSaveAutomationSettings(
+                                weatherLocation.trim(),
+                                remindersEnabled,
+                                reminderHour.toIntOrNull() ?: 19,
+                                reminderMinute.toIntOrNull() ?: 0
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Für diese Liste speichern")
+                    }
                 }
             }
         }
 
-        WeatherCard(
-            weather = uiState.weather,
-            suggestions = uiState.weatherSuggestions,
-            loading = uiState.weatherLoading,
-            error = uiState.weatherError,
-            onRefresh = { onRefreshWeather(true) }
-        )
-
-        AnimatedVisibility(visible = uiState.items.isEmpty()) {
-            EmptyState("Tippe auf +, um dein erstes Item hinzuzufügen.")
+        item {
+            WeatherCard(
+                weather = uiState.weather,
+                suggestions = uiState.weatherSuggestions,
+                loading = uiState.weatherLoading,
+                error = uiState.weatherError,
+                onRefresh = { onRefreshWeather(true) }
+            )
         }
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(bottom = 92.dp)
-        ) {
+        if (uiState.items.isEmpty()) {
+            item {
+                EmptyState("Tippe auf +, um dein erstes Item hinzuzufügen.")
+            }
+        } else {
             items(uiState.items, key = { it.id }) { item ->
                 SwipePackItem(
                     item = item,
@@ -885,7 +897,7 @@ private fun AddNameDialog(
         text = {
             OutlinedTextField(
                 value = value,
-                onValueChange = onValueChange,
+                onValueChange = { onValueChange(if (it.isEmpty()) it else it[0].uppercase() + it.drop(1)) },
                 label = { Text(label) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
@@ -920,7 +932,7 @@ private fun AddItemDialog(
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(
                     value = value,
-                    onValueChange = onValueChange,
+                    onValueChange = { onValueChange(if (it.isEmpty()) it else it[0].uppercase() + it.drop(1)) },
                     label = { Text(label) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
