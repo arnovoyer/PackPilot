@@ -31,9 +31,11 @@ interface PackDao {
             packing_lists.createdAt AS createdAt,
             packing_lists.tripId AS tripId,
             packing_lists.weatherLocation AS weatherLocation,
+            packing_lists.weatherForecastEpochDay AS weatherForecastEpochDay,
             packing_lists.remindersEnabled AS remindersEnabled,
             packing_lists.reminderHour AS reminderHour,
             packing_lists.reminderMinute AS reminderMinute,
+            packing_lists.reminderTriggerAtMillis AS reminderTriggerAtMillis,
             COUNT(packing_items.id) AS totalCount,
             SUM(CASE WHEN packing_items.isPacked = 1 THEN 1 ELSE 0 END) AS packedCount,
             COALESCE(
@@ -79,6 +81,9 @@ interface PackDao {
         """
     )
     fun observeItemsForList(listId: Long): Flow<List<PackingItemEntity>>
+
+    @Query("SELECT * FROM packing_items WHERE listId = :listId ORDER BY createdAt ASC")
+    suspend fun getItemsForListNow(listId: Long): List<PackingItemEntity>
 
     @Insert
     suspend fun insertItem(item: PackingItemEntity)

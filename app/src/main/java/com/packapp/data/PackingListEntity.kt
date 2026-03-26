@@ -10,7 +10,9 @@ data class PackingListEntity(
     val createdAt: Long = System.currentTimeMillis(),
     val tripId: Long? = null,
     val weatherLocation: String = "",
+    val weatherForecastEpochDay: Long? = null,
     val remindersEnabled: Boolean = false,
     val reminderHour: Int = 19,
-    val reminderMinute: Int = 0
+    val reminderMinute: Int = 0,
+    val reminderTriggerAtMillis: Long? = null
 )

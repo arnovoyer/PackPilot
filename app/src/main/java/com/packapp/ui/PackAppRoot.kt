@@ -1,5 +1,13 @@
 package com.packapp.ui
 
+import android.Manifest
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -19,6 +27,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.semantics.Role
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -28,6 +39,8 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
@@ -71,6 +84,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -86,7 +103,12 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.delay
+import androidx.core.content.ContextCompat
 
 @Composable
 fun PackPilotRoot(viewModel: AppViewModel = viewModel()) {
@@ -164,6 +186,7 @@ fun PackPilotRoot(viewModel: AppViewModel = viewModel()) {
                     onOpenList = viewModel::openList,
                     onDeleteList = viewModel::deleteList,
                     onStartRename = viewModel::startRenameList,
+                    onDuplicateList = viewModel::duplicateListLayout,
                     onRenameInputChange = viewModel::onEditingListNameChange,
                     onCommitRename = viewModel::commitRenameList,
                     onCancelRename = viewModel::cancelRenameList
@@ -238,6 +261,7 @@ fun PackPilotRoot(viewModel: AppViewModel = viewModel()) {
         if (showOnboarding) {
             OnboardingOverlay(onDismiss = viewModel::dismissOnboarding)
         }
+
     }
     }
 }
@@ -277,6 +301,7 @@ private fun HomeScreen(
     onOpenList: (Long) -> Unit,
     onDeleteList: (Long) -> Unit,
     onStartRename: (PackingListEntity) -> Unit,
+    onDuplicateList: (PackingListEntity) -> Unit,
     onRenameInputChange: (String) -> Unit,
     onCommitRename: (PackingListEntity) -> Unit,
     onCancelRename: () -> Unit
@@ -319,7 +344,8 @@ private fun HomeScreen(
                 onValueChange = { onSearchQueryChange(if (it.isEmpty()) it else it[0].uppercase() + it.drop(1)) },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("Listen durchsuchen") },
-                singleLine = true
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
             )
         }
 
@@ -414,6 +440,7 @@ private fun HomeScreen(
                         onOpen = { onOpenList(summary.list.id) },
                         onDelete = { onDeleteList(summary.list.id) },
                         onStartRename = { onStartRename(summary.list) },
+                        onDuplicateLayout = { onDuplicateList(summary.list) },
                         onRenameInputChange = onRenameInputChange,
                         onCommitRename = { onCommitRename(summary.list) },
                         onCancelRename = onCancelRename
@@ -434,6 +461,7 @@ private fun ListCard(
     onOpen: () -> Unit,
     onDelete: () -> Unit,
     onStartRename: () -> Unit,
+    onDuplicateLayout: () -> Unit,
     onRenameInputChange: (String) -> Unit,
     onCommitRename: () -> Unit,
     onCancelRename: () -> Unit
@@ -456,7 +484,8 @@ private fun ListCard(
                     onValueChange = { onRenameInputChange(if (it.isEmpty()) it else it[0].uppercase() + it.drop(1)) },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Listenname") },
-                    singleLine = true
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words)
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = onCommitRename) { Text("Speichern") }
@@ -497,6 +526,26 @@ private fun ListCard(
                             onDismissRequest = { menuExpanded = false }
                         ) {
                             DropdownMenuItem(
+                                text = { Text("Umbenennen") },
+                                onClick = {
+                                    menuExpanded = false
+                                    onStartRename()
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Edit, contentDescription = null)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Layout kopieren") },
+                                onClick = {
+                                    menuExpanded = false
+                                    onDuplicateLayout()
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Add, contentDescription = null)
+                                }
+                            )
+                            DropdownMenuItem(
                                 text = { Text("Löschen") },
                                 onClick = {
                                     menuExpanded = false
@@ -527,26 +576,12 @@ private fun DetailScreen(
     onSwipePacked: (PackingItemEntity) -> Unit,
     onReset: () -> Unit,
     onRefreshWeather: (Boolean) -> Unit,
-    onSaveAutomationSettings: (String, Boolean, Int, Int) -> Unit
+    onSaveAutomationSettings: (String, Long?, Boolean, Int, Int, Long?) -> Unit
 ) {
     var showSuccess by remember(uiState.list?.id) { mutableStateOf(false) }
 
     LaunchedEffect(uiState.isComplete) {
         if (uiState.isComplete) showSuccess = true
-    }
-
-    if (showSuccess) {
-        SuccessScreen(
-            onBackToHome = {
-                showSuccess = false
-                onBack()
-            },
-            onReset = {
-                onReset()
-                showSuccess = false
-            }
-        )
-        return
     }
 
     if (uiState.list == null) {
@@ -570,9 +605,27 @@ private fun DetailScreen(
     }
 
     var weatherLocation by remember(uiState.list.id) { mutableStateOf(uiState.list.weatherLocation) }
+    var weatherForecastDate by remember(uiState.list.id) {
+        mutableStateOf(formatEpochDayForInput(uiState.list.weatherForecastEpochDay))
+    }
     var remindersEnabled by remember(uiState.list.id) { mutableStateOf(uiState.list.remindersEnabled) }
     var reminderHour by remember(uiState.list.id) { mutableStateOf(uiState.list.reminderHour.toString()) }
     var reminderMinute by remember(uiState.list.id) { mutableStateOf(uiState.list.reminderMinute.toString()) }
+    var reminderDate by remember(uiState.list.id) {
+        mutableStateOf(formatReminderDateForInput(uiState.list.reminderTriggerAtMillis))
+    }
+    var reminderTime by remember(uiState.list.id) {
+        mutableStateOf(formatReminderTimeForInput(uiState.list.reminderTriggerAtMillis, uiState.list.reminderHour, uiState.list.reminderMinute))
+    }
+    var automationExpanded by rememberSaveable(uiState.list.id) { mutableStateOf(false) }
+    val context = LocalContext.current
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (!granted) {
+            remindersEnabled = false
+        }
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -624,53 +677,131 @@ private fun DetailScreen(
                     modifier = Modifier.padding(14.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text("Ort & Erinnerungen für diese Liste", style = MaterialTheme.typography.labelLarge)
-                    OutlinedTextField(
-                        value = weatherLocation,
-                        onValueChange = { weatherLocation = it.replaceFirstChar { c -> c.uppercase() } },
-                        label = { Text("Wetter-Ort (z. B. Wien)") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { automationExpanded = !automationExpanded },
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Reminder aktiv")
-                        Switch(
-                            checked = remindersEnabled,
-                            onCheckedChange = { remindersEnabled = it }
-                        )
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(
-                            value = reminderHour,
-                            onValueChange = { input -> if (input.all { it.isDigit() }) reminderHour = input },
-                            label = { Text("Stunde") },
-                            singleLine = true,
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = reminderMinute,
-                            onValueChange = { input -> if (input.all { it.isDigit() }) reminderMinute = input },
-                            label = { Text("Minute") },
-                            singleLine = true,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Button(
-                        onClick = {
-                            onSaveAutomationSettings(
-                                weatherLocation.trim(),
-                                remindersEnabled,
-                                reminderHour.toIntOrNull() ?: 19,
-                                reminderMinute.toIntOrNull() ?: 0
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text("Wetter & Erinnerungen", style = MaterialTheme.typography.labelLarge)
+                            Text(
+                                text = if (automationExpanded) {
+                                    "Tipps: Datum als YYYY-MM-DD, Zeit als HH:mm"
+                                } else {
+                                    "Tippen zum Ein-/Ausklappen"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Für diese Liste speichern")
+                        }
+                        Icon(
+                            imageVector = if (automationExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = null
+                        )
+                    }
+
+                    if (automationExpanded) {
+                        OutlinedTextField(
+                            value = weatherLocation,
+                            onValueChange = { weatherLocation = it.replaceFirstChar { c -> c.uppercase() } },
+                            label = { Text("Wetter-Ort (z. B. Wien)") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        PickerField(
+                            value = weatherForecastDate,
+                            label = "Wetter-Tag (YYYY-MM-DD)",
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = {
+                                showDatePickerDialog(
+                                    context = context,
+                                    initialDate = parseLocalDateOrNull(weatherForecastDate)
+                                ) { selectedDate ->
+                                    weatherForecastDate = selectedDate.format(isoDateFormatter)
+                                }
+                            }
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Reminder aktiv")
+                            Switch(
+                                checked = remindersEnabled,
+                                onCheckedChange = { enabled ->
+                                    if (enabled && !hasNotificationPermission(context)) {
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                        }
+                                        remindersEnabled = hasNotificationPermission(context)
+                                    } else {
+                                        remindersEnabled = enabled
+                                    }
+                                }
+                            )
+                        }
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            PickerField(
+                                value = reminderDate,
+                                label = "Push-Tag (YYYY-MM-DD)",
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    showDatePickerDialog(
+                                        context = context,
+                                        initialDate = parseLocalDateOrNull(reminderDate)
+                                    ) { selectedDate ->
+                                        reminderDate = selectedDate.format(isoDateFormatter)
+                                    }
+                                }
+                            )
+                            PickerField(
+                                value = reminderTime,
+                                label = "Push-Zeit (HH:mm)",
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    val (initialHour, initialMinute) = parseHourMinuteOrNull(reminderTime)
+                                        ?: Pair(reminderHour.toIntOrNull() ?: 19, reminderMinute.toIntOrNull() ?: 0)
+                                    showTimePickerDialog(
+                                        context = context,
+                                        initialHour = initialHour,
+                                        initialMinute = initialMinute
+                                    ) { selectedHour, selectedMinute ->
+                                        reminderTime = autoInsertTimeColon(String.format(Locale.GERMANY, "%02d%02d", selectedHour, selectedMinute))
+                                    }
+                                }
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                val weatherDay = parseEpochDayFromInput(weatherForecastDate)
+                                val oneTimeReminder = if (remindersEnabled) {
+                                    parseReminderTriggerMillis(reminderDate, reminderTime)
+                                } else {
+                                    null
+                                }
+                                val (hourFromTime, minuteFromTime) = parseHourMinuteOrNull(reminderTime)
+                                    ?: Pair(reminderHour.toIntOrNull() ?: 19, reminderMinute.toIntOrNull() ?: 0)
+                                onSaveAutomationSettings(
+                                    weatherLocation.trim(),
+                                    weatherDay,
+                                    remindersEnabled,
+                                    hourFromTime,
+                                    minuteFromTime,
+                                    oneTimeReminder
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Für diese Liste speichern")
+                        }
                     }
                 }
             }
@@ -679,6 +810,7 @@ private fun DetailScreen(
         item {
             WeatherCard(
                 weather = uiState.weather,
+                forecastEpochDay = uiState.list.weatherForecastEpochDay,
                 suggestions = uiState.weatherSuggestions,
                 loading = uiState.weatherLoading,
                 error = uiState.weatherError,
@@ -700,11 +832,36 @@ private fun DetailScreen(
             }
         }
     }
+
+    if (showSuccess) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showSuccess = false },
+            title = { Text("Alles gepackt") },
+            text = { Text("Stark, deine Liste ist vollständig. Du kannst jetzt resetten oder zur Übersicht zurück.") },
+            confirmButton = {
+                Button(onClick = {
+                    showSuccess = false
+                    onBack()
+                }) {
+                    Text("Zur Listenübersicht")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = {
+                    showSuccess = false
+                    onReset()
+                }) {
+                    Text("Liste zurücksetzen")
+                }
+            }
+        )
+    }
 }
 
 @Composable
 private fun WeatherCard(
     weather: WeatherSnapshot?,
+    forecastEpochDay: Long?,
     suggestions: List<String>,
     loading: Boolean,
     error: String?,
@@ -725,7 +882,16 @@ private fun WeatherCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("Wetter", style = MaterialTheme.typography.labelLarge)
-                TextButton(onClick = onRefresh) { Text("Aktualisieren") }
+                TextButton(onClick = onRefresh) { Text("Neu laden") }
+            }
+
+            if (weather != null) {
+                Text(
+                    text = "Aktualisiert um ${formatUpdatedTime(weather.fetchedAt)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
             when {
@@ -733,12 +899,20 @@ private fun WeatherCard(
                 error != null -> Text(error, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
                 weather == null -> Text("Kein Wetter verfügbar.", style = MaterialTheme.typography.bodyMedium)
                 else -> {
-                    val source = if (weather.isFromCache) "(Cache)" else "(Live)"
                     Text(
-                        "${weather.locationLabel} $source",
+                        weather.locationLabel,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold
                     )
+                    forecastEpochDay
+                        ?.takeIf { it > LocalDate.now(ZoneId.systemDefault()).toEpochDay() }
+                        ?.let {
+                            Text(
+                                text = "Voraussage für ${LocalDate.ofEpochDay(it).format(DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.GERMANY))}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     Text(
                         "Min ${weather.temperatureMinC}°C · Max ${weather.temperatureMaxC}°C · Regen ${weather.precipitationProbabilityMax}%",
                         style = MaterialTheme.typography.bodyMedium,
@@ -900,6 +1074,7 @@ private fun AddNameDialog(
                 onValueChange = { onValueChange(if (it.isEmpty()) it else it[0].uppercase() + it.drop(1)) },
                 label = { Text(label) },
                 singleLine = true,
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
                 modifier = Modifier.fillMaxWidth()
             )
         },
@@ -935,6 +1110,7 @@ private fun AddItemDialog(
                     onValueChange = { onValueChange(if (it.isEmpty()) it else it[0].uppercase() + it.drop(1)) },
                     label = { Text(label) },
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
@@ -946,6 +1122,7 @@ private fun AddItemDialog(
                     },
                     label = { Text("Gewicht in Gramm (optional)") },
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -959,11 +1136,145 @@ private fun AddItemDialog(
     )
 }
 
+@Composable
+private fun PickerField(
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = { },
+        label = { Text(label) },
+        readOnly = true,
+        singleLine = true,
+        modifier = modifier
+            .fillMaxWidth()
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = { onClick() })
+            }
+    )
+}
+
 private fun formatDuration(seconds: Long?): String {
     if (seconds == null || seconds < 0) return "--:--"
     val minutes = seconds / 60
     val secs = seconds % 60
     return String.format("%02d:%02d", minutes, secs)
+}
+
+private val isoDateFormatter: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
+
+private fun formatEpochDayForInput(epochDay: Long?): String {
+    return epochDay?.let { LocalDate.ofEpochDay(it).format(isoDateFormatter) }.orEmpty()
+}
+
+private fun formatReminderDateForInput(triggerAtMillis: Long?): String {
+    if (triggerAtMillis == null) return ""
+    val localDate = LocalDateTime.ofInstant(
+        Date(triggerAtMillis).toInstant(),
+        ZoneId.systemDefault()
+    ).toLocalDate()
+    return localDate.format(isoDateFormatter)
+}
+
+private fun formatReminderTimeForInput(triggerAtMillis: Long?, fallbackHour: Int, fallbackMinute: Int): String {
+    if (triggerAtMillis == null) {
+        return String.format(Locale.GERMANY, "%02d:%02d", fallbackHour, fallbackMinute)
+    }
+    val localDateTime = LocalDateTime.ofInstant(
+        Date(triggerAtMillis).toInstant(),
+        ZoneId.systemDefault()
+    )
+    return String.format(Locale.GERMANY, "%02d:%02d", localDateTime.hour, localDateTime.minute)
+}
+
+private fun parseEpochDayFromInput(value: String): Long? {
+    val normalized = value.trim()
+    if (normalized.isEmpty()) return null
+    return runCatching { LocalDate.parse(normalized, isoDateFormatter).toEpochDay() }.getOrNull()
+}
+
+private fun parseLocalDateOrNull(value: String): LocalDate? {
+    val normalized = value.trim()
+    if (normalized.isEmpty()) return null
+    return runCatching { LocalDate.parse(normalized, isoDateFormatter) }.getOrNull()
+}
+
+private fun parseHourMinuteOrNull(value: String): Pair<Int, Int>? {
+    val match = Regex("^(\\d{1,2}):(\\d{1,2})$").find(value.trim()) ?: return null
+    val hour = match.groupValues[1].toIntOrNull()?.coerceIn(0, 23) ?: return null
+    val minute = match.groupValues[2].toIntOrNull()?.coerceIn(0, 59) ?: return null
+    return hour to minute
+}
+
+private fun autoInsertTimeColon(input: String): String {
+    val trimmed = input.trim()
+    val digits = trimmed.filter { it.isDigit() }
+    return when {
+        trimmed.contains(':') -> trimmed
+        digits.length <= 2 -> digits
+        else -> digits.take(2) + ":" + digits.drop(2).take(2)
+    }
+}
+
+private fun parseReminderTriggerMillis(dateValue: String, timeValue: String): Long? {
+    val date = runCatching { LocalDate.parse(dateValue.trim(), isoDateFormatter) }.getOrNull() ?: return null
+    val match = Regex("^(\\d{1,2}):(\\d{1,2})$").find(timeValue.trim()) ?: return null
+    val hour = match.groupValues[1].toIntOrNull()?.coerceIn(0, 23) ?: return null
+    val minute = match.groupValues[2].toIntOrNull()?.coerceIn(0, 59) ?: return null
+    val localDateTime = date.atTime(hour, minute)
+    return localDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+}
+
+private fun formatUpdatedTime(timestamp: Long): String {
+    return SimpleDateFormat("HH:mm", Locale.GERMANY).format(Date(timestamp))
+}
+
+private fun showDatePickerDialog(
+    context: Context,
+    initialDate: LocalDate?,
+    onDateSelected: (LocalDate) -> Unit
+) {
+    val safeDate = initialDate ?: LocalDate.now()
+    DatePickerDialog(
+        context,
+        { _, year, month, dayOfMonth ->
+            onDateSelected(LocalDate.of(year, month + 1, dayOfMonth))
+        },
+        safeDate.year,
+        safeDate.monthValue - 1,
+        safeDate.dayOfMonth
+    ).show()
+}
+
+private fun showTimePickerDialog(
+    context: Context,
+    initialHour: Int,
+    initialMinute: Int,
+    onTimeSelected: (Int, Int) -> Unit
+) {
+    TimePickerDialog(
+        context,
+        { _, hourOfDay, minute ->
+            onTimeSelected(hourOfDay, minute)
+        },
+        initialHour.coerceIn(0, 23),
+        initialMinute.coerceIn(0, 59),
+        true
+    ).show()
+}
+
+private fun hasNotificationPermission(context: Context): Boolean {
+    return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+        true
+    } else {
+        ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+    }
 }
 
 @Composable
@@ -1018,6 +1329,7 @@ private fun HistoryCard(entry: ActivityEventEntity) {
         "LIST_CREATED" -> "Liste erstellt"
         "LIST_RENAMED" -> "Liste umbenannt"
         "LIST_DELETED" -> "Liste gelöscht"
+        "LIST_LAYOUT_COPIED" -> "Layout kopiert"
         "ITEM_ADDED" -> "Item hinzugefügt"
         "ITEM_PACKED" -> "Item gepackt"
         "ITEM_UNPACKED" -> "Item entpackt"
@@ -1071,6 +1383,7 @@ private fun eventBadgeLabel(eventType: String): String = when (eventType) {
     "LIST_CREATED" -> "Liste"
     "LIST_RENAMED" -> "Liste"
     "LIST_DELETED" -> "Liste"
+    "LIST_LAYOUT_COPIED" -> "Kopie"
     "LIST_RESET" -> "Reset"
     else -> "Event"
 }
@@ -1082,6 +1395,7 @@ private fun eventBadgeColor(eventType: String): Color = when (eventType) {
     "LIST_CREATED" -> Color(0xFF6A1B9A)
     "LIST_RENAMED" -> Color(0xFF283593)
     "LIST_DELETED" -> Color(0xFFC62828)
+    "LIST_LAYOUT_COPIED" -> Color(0xFF00897B)
     "LIST_RESET" -> Color(0xFF455A64)
     else -> Color(0xFF546E7A)
 }

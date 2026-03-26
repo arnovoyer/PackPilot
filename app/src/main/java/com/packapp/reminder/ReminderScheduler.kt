@@ -2,7 +2,9 @@ package com.packapp.reminder
 
 import android.content.Context
 import androidx.work.Data
+import androidx.work.ExistingWorkPolicy
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import java.util.Calendar
@@ -26,6 +28,26 @@ object ReminderScheduler {
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             uniqueWork,
             ExistingPeriodicWorkPolicy.UPDATE,
+            request
+        )
+    }
+
+    fun scheduleOneTimeForList(context: Context, listId: Long, listName: String, triggerAtMillis: Long) {
+        val delayMillis = (triggerAtMillis - System.currentTimeMillis()).coerceAtLeast(1_000L)
+        val input = Data.Builder()
+            .putLong(ReminderWorker.INPUT_LIST_ID, listId)
+            .putString(ReminderWorker.INPUT_LIST_NAME, listName)
+            .build()
+
+        val request = OneTimeWorkRequestBuilder<ReminderWorker>()
+            .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
+            .setInputData(input)
+            .build()
+
+        val uniqueWork = "$UNIQUE_WORK_PREFIX$listId"
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            uniqueWork,
+            ExistingWorkPolicy.REPLACE,
             request
         )
     }

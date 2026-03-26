@@ -4,6 +4,8 @@ import com.packapp.network.OpenMeteoForecastService
 import com.packapp.network.OpenMeteoGeocodingService
 import kotlinx.coroutines.flow.Flow
 import com.packapp.network.OpenMeteoApiFactory
+import java.time.LocalDate
+import java.time.ZoneId
 import kotlin.math.roundToInt
 
 class PackRepository(
@@ -65,19 +67,60 @@ class PackRepository(
         )
     }
 
+    suspend fun duplicateListLayout(sourceList: PackingListEntity): Long {
+        val baseName = sourceList.name.trim().ifEmpty { "Liste" }
+        val copiedListName = "$baseName (Kopie)"
+        val newListId = dao.insertList(
+            PackingListEntity(
+                name = copiedListName,
+                weatherLocation = sourceList.weatherLocation,
+                weatherForecastEpochDay = sourceList.weatherForecastEpochDay,
+                remindersEnabled = sourceList.remindersEnabled,
+                reminderHour = sourceList.reminderHour,
+                reminderMinute = sourceList.reminderMinute,
+                reminderTriggerAtMillis = sourceList.reminderTriggerAtMillis
+            )
+        )
+
+        val sourceItems = dao.getItemsForListNow(sourceList.id)
+        sourceItems.forEach { sourceItem ->
+            dao.insertItem(
+                PackingItemEntity(
+                    listId = newListId,
+                    title = sourceItem.title,
+                    weightGrams = sourceItem.weightGrams,
+                    isPacked = false,
+                    packedAt = null,
+                    wasUsed = false
+                )
+            )
+        }
+
+        logEvent(
+            eventType = "LIST_LAYOUT_COPIED",
+            listId = newListId,
+            listName = copiedListName
+        )
+        return newListId
+    }
+
     suspend fun updateListAutomationSettings(
         listId: Long,
         weatherLocation: String,
+        weatherForecastEpochDay: Long?,
         remindersEnabled: Boolean,
         reminderHour: Int,
-        reminderMinute: Int
+        reminderMinute: Int,
+        reminderTriggerAtMillis: Long?
     ): PackingListEntity? {
         val list = dao.getListById(listId) ?: return null
         val updated = list.copy(
             weatherLocation = weatherLocation.trim(),
+            weatherForecastEpochDay = weatherForecastEpochDay,
             remindersEnabled = remindersEnabled,
             reminderHour = reminderHour.coerceIn(0, 23),
-            reminderMinute = reminderMinute.coerceIn(0, 59)
+            reminderMinute = reminderMinute.coerceIn(0, 59),
+            reminderTriggerAtMillis = reminderTriggerAtMillis
         )
         dao.updateList(updated)
         return updated
@@ -226,12 +269,23 @@ class PackRepository(
     fun observeAverageSessionDurationMillis(): Flow<Double?> =
         dao.observeAverageSessionDurationMillis()
 
-    suspend fun getWeatherForLocation(location: String, forceRefresh: Boolean = false): WeatherSnapshot? {
+    suspend fun getWeatherForLocation(
+        location: String,
+        forceRefresh: Boolean = false,
+        forecastEpochDay: Long? = null
+    ): WeatherSnapshot? {
         val normalized = normalizeLocation(location)
         if (normalized.isBlank()) return null
 
+        val zoneId = ZoneId.systemDefault()
+        val todayEpochDay = LocalDate.now(zoneId).toEpochDay()
+        val targetEpochDay = forecastEpochDay ?: todayEpochDay
+        val dayOffset = (targetEpochDay - todayEpochDay).toInt().coerceIn(0, 15)
+        val effectiveEpochDay = todayEpochDay + dayOffset
+        val cacheKey = "$normalized|$effectiveEpochDay"
+
         val now = System.currentTimeMillis()
-        val cached = dao.getWeatherCache(normalized)
+        val cached = dao.getWeatherCache(cacheKey)
         if (!forceRefresh && cached != null && cached.expiresAt > now) {
             return cached.toSnapshot(fromCache = true)
         }
@@ -242,13 +296,14 @@ class PackRepository(
 
             val forecast = forecastService.forecast(
                 latitude = topResult.latitude,
-                longitude = topResult.longitude
+                longitude = topResult.longitude,
+                forecastDays = dayOffset + 1
             )
 
             val daily = forecast.daily
-            val minTemp = daily?.temperatureMin?.firstOrNull()
-            val maxTemp = daily?.temperatureMax?.firstOrNull()
-            val precip = daily?.precipitationProbabilityMax?.firstOrNull()
+            val minTemp = daily?.temperatureMin?.getOrNull(dayOffset)
+            val maxTemp = daily?.temperatureMax?.getOrNull(dayOffset)
+            val precip = daily?.precipitationProbabilityMax?.getOrNull(dayOffset)
             if (minTemp == null || maxTemp == null || precip == null) {
                 return@runCatching cached?.toSnapshot(fromCache = true)
             }
@@ -262,7 +317,7 @@ class PackRepository(
             }
 
             val entity = WeatherCacheEntity(
-                locationKey = normalized,
+                locationKey = cacheKey,
                 locationLabel = locationLabel,
                 fetchedAt = now,
                 expiresAt = now + WEATHER_CACHE_TTL_MILLIS,

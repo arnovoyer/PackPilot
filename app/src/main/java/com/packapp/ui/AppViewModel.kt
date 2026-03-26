@@ -120,6 +120,18 @@ data class SettingsUiState(
     val luggageLimitKg: Int = 10
 )
 
+data class FirstOpenSetupDialogState(
+    val listId: Long,
+    val listName: String,
+    val weatherLocation: String,
+    val weatherForecastEpochDay: Long?,
+    val remindersEnabled: Boolean,
+    val reminderHour: String,
+    val reminderMinute: String,
+    val reminderDate: String,
+    val reminderTime: String
+)
+
 private data class DetailBaseState(
     val list: PackingListEntity?,
     val items: List<PackingItemEntity>,
@@ -150,6 +162,10 @@ private data class PerformanceMetrics(
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AppViewModel(application: Application) : AndroidViewModel(application) {
+    private companion object {
+        const val PREF_KEY_CONFIGURED_LIST_IDS = "configured_list_ids"
+    }
+
     private val app = application
     private val prefs = application.getSharedPreferences("packapp_prefs", Application.MODE_PRIVATE)
     private val repository = PackRepository(PackDatabase.getInstance(application).packDao())
@@ -162,6 +178,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     private val showOnboardingMutable = MutableStateFlow(!prefs.getBoolean("onboarding_seen", false))
     val showOnboarding: StateFlow<Boolean> = showOnboardingMutable.asStateFlow()
+
+    private val firstOpenSetupDialogMutable = MutableStateFlow<FirstOpenSetupDialogState?>(null)
+    val firstOpenSetupDialog: StateFlow<FirstOpenSetupDialogState?> = firstOpenSetupDialogMutable.asStateFlow()
 
     private val settingsMutable = MutableStateFlow(
         SettingsUiState(
@@ -371,9 +390,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val list = detailUiState.value.list ?: return
         saveCurrentListAutomationSettings(
             weatherLocation = list.weatherLocation,
+            weatherForecastEpochDay = list.weatherForecastEpochDay,
             remindersEnabled = enabled,
             reminderHour = list.reminderHour,
-            reminderMinute = list.reminderMinute
+            reminderMinute = list.reminderMinute,
+            reminderTriggerAtMillis = list.reminderTriggerAtMillis
         )
     }
 
@@ -381,9 +402,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val list = detailUiState.value.list ?: return
         saveCurrentListAutomationSettings(
             weatherLocation = list.weatherLocation,
+            weatherForecastEpochDay = list.weatherForecastEpochDay,
             remindersEnabled = list.remindersEnabled,
             reminderHour = hour,
-            reminderMinute = minute
+            reminderMinute = minute,
+            reminderTriggerAtMillis = list.reminderTriggerAtMillis
         )
     }
 
@@ -391,9 +414,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val list = detailUiState.value.list ?: return
         saveCurrentListAutomationSettings(
             weatherLocation = value,
+            weatherForecastEpochDay = list.weatherForecastEpochDay,
             remindersEnabled = list.remindersEnabled,
             reminderHour = list.reminderHour,
-            reminderMinute = list.reminderMinute
+            reminderMinute = list.reminderMinute,
+            reminderTriggerAtMillis = list.reminderTriggerAtMillis
         )
     }
 
@@ -414,7 +439,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             }
 
             detailInputState.update { it.copy(weatherLoading = true, weatherError = null) }
-            val weather = repository.getWeatherForLocation(location, forceRefresh)
+            val weather = repository.getWeatherForLocation(
+                location = location,
+                forceRefresh = forceRefresh,
+                forecastEpochDay = list?.weatherForecastEpochDay
+            )
             if (weather == null) {
                 detailInputState.update {
                     it.copy(
@@ -508,6 +537,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun closeList() {
         selectedListIdMutable.value = null
+        firstOpenSetupDialogMutable.value = null
         detailInputState.update {
             it.copy(
                 newItemTitle = "",
@@ -572,6 +602,86 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun duplicateListLayout(list: PackingListEntity) {
+        viewModelScope.launch {
+            repository.duplicateListLayout(list)
+        }
+    }
+
+    fun onFirstOpenSetupLocationChange(value: String) {
+        firstOpenSetupDialogMutable.update { current ->
+            current?.copy(weatherLocation = value)
+        }
+    }
+
+    fun onFirstOpenSetupRemindersEnabledChange(value: Boolean) {
+        firstOpenSetupDialogMutable.update { current ->
+            current?.copy(remindersEnabled = value)
+        }
+    }
+
+    fun onFirstOpenSetupHourChange(value: String) {
+        if (!value.all { it.isDigit() } || value.length > 2) return
+        firstOpenSetupDialogMutable.update { current ->
+            current?.copy(reminderHour = value)
+        }
+    }
+
+    fun onFirstOpenSetupMinuteChange(value: String) {
+        if (!value.all { it.isDigit() } || value.length > 2) return
+        firstOpenSetupDialogMutable.update { current ->
+            current?.copy(reminderMinute = value)
+        }
+    }
+
+    fun onFirstOpenSetupWeatherForecastEpochDayChange(value: Long?) {
+        firstOpenSetupDialogMutable.update { current ->
+            current?.copy(weatherForecastEpochDay = value)
+        }
+    }
+
+    fun onFirstOpenSetupReminderDateChange(value: String) {
+        firstOpenSetupDialogMutable.update { current ->
+            current?.copy(reminderDate = value)
+        }
+    }
+
+    fun onFirstOpenSetupReminderTimeChange(value: String) {
+        firstOpenSetupDialogMutable.update { current ->
+            current?.copy(reminderTime = autoInsertTimeColon(value))
+        }
+    }
+
+    fun dismissFirstOpenSetupDialog() {
+        val listId = firstOpenSetupDialogMutable.value?.listId ?: return
+        markInitialSetupSeen(listId)
+        firstOpenSetupDialogMutable.value = null
+    }
+
+    fun confirmFirstOpenSetupDialog() {
+        val dialog = firstOpenSetupDialogMutable.value ?: return
+        val hour = dialog.reminderHour.toIntOrNull() ?: 19
+        val minute = dialog.reminderMinute.toIntOrNull() ?: 0
+        val reminderTriggerAtMillis = parseReminderTriggerMillis(
+            dateValue = dialog.reminderDate,
+            timeValue = dialog.reminderTime
+        )
+        viewModelScope.launch {
+            saveListAutomationSettings(
+                listId = dialog.listId,
+                weatherLocation = dialog.weatherLocation.trim(),
+                weatherForecastEpochDay = dialog.weatherForecastEpochDay,
+                remindersEnabled = dialog.remindersEnabled,
+                reminderHour = hour,
+                reminderMinute = minute,
+                reminderTriggerAtMillis = reminderTriggerAtMillis,
+                refreshIfCurrentList = true
+            )
+            markInitialSetupSeen(dialog.listId)
+            firstOpenSetupDialogMutable.value = null
+        }
+    }
+
     // ===== TRIP MANAGEMENT =====
     fun createTrip(title: String, location: String, startDate: Long) {
         viewModelScope.launch {
@@ -623,51 +733,140 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun saveCurrentListAutomationSettings(
         weatherLocation: String,
+        weatherForecastEpochDay: Long?,
         remindersEnabled: Boolean,
         reminderHour: Int,
-        reminderMinute: Int
+        reminderMinute: Int,
+        reminderTriggerAtMillis: Long?
     ) {
         val listId = selectedListIdMutable.value ?: return
         viewModelScope.launch {
-            val updated = repository.updateListAutomationSettings(
+            saveListAutomationSettings(
                 listId = listId,
                 weatherLocation = weatherLocation,
+                weatherForecastEpochDay = weatherForecastEpochDay,
                 remindersEnabled = remindersEnabled,
                 reminderHour = reminderHour,
-                reminderMinute = reminderMinute
-            ) ?: return@launch
+                reminderMinute = reminderMinute,
+                reminderTriggerAtMillis = reminderTriggerAtMillis,
+                refreshIfCurrentList = true
+            )
+        }
+    }
 
-            if (updated.remindersEnabled) {
-                ReminderScheduler.scheduleForList(
+    private suspend fun saveListAutomationSettings(
+        listId: Long,
+        weatherLocation: String,
+        weatherForecastEpochDay: Long?,
+        remindersEnabled: Boolean,
+        reminderHour: Int,
+        reminderMinute: Int,
+        reminderTriggerAtMillis: Long?,
+        refreshIfCurrentList: Boolean
+    ) {
+        val updated = repository.updateListAutomationSettings(
+            listId = listId,
+            weatherLocation = weatherLocation,
+            weatherForecastEpochDay = weatherForecastEpochDay,
+            remindersEnabled = remindersEnabled,
+            reminderHour = reminderHour,
+            reminderMinute = reminderMinute,
+            reminderTriggerAtMillis = reminderTriggerAtMillis
+        ) ?: return
+
+        if (updated.remindersEnabled) {
+            val triggerAtMillis = updated.reminderTriggerAtMillis
+            if (triggerAtMillis != null && triggerAtMillis > System.currentTimeMillis()) {
+                ReminderScheduler.scheduleOneTimeForList(
                     app,
                     listId = updated.id,
                     listName = updated.name,
-                    hour = updated.reminderHour,
-                    minute = updated.reminderMinute
+                    triggerAtMillis = triggerAtMillis
                 )
             } else {
                 ReminderScheduler.cancelForList(app, updated.id)
             }
+        } else {
+            ReminderScheduler.cancelForList(app, updated.id)
+        }
 
+        if (refreshIfCurrentList && selectedListIdMutable.value == updated.id) {
             refreshWeather(forceRefresh = false)
         }
+    }
+
+    private fun isInitialSetupRequired(listId: Long): Boolean {
+        val configuredIds = prefs.getStringSet(PREF_KEY_CONFIGURED_LIST_IDS, emptySet()).orEmpty()
+        return !configuredIds.contains(listId.toString())
+    }
+
+    private fun markInitialSetupSeen(listId: Long) {
+        val updated = prefs.getStringSet(PREF_KEY_CONFIGURED_LIST_IDS, emptySet())
+            .orEmpty()
+            .toMutableSet()
+            .apply { add(listId.toString()) }
+        prefs.edit().putStringSet(PREF_KEY_CONFIGURED_LIST_IDS, updated).apply()
     }
 
     private fun synchronizeAllReminderWorkers() {
         viewModelScope.launch {
             repository.getAllListsOnce().forEach { list ->
                 if (list.remindersEnabled) {
-                    ReminderScheduler.scheduleForList(
-                        app,
-                        listId = list.id,
-                        listName = list.name,
-                        hour = list.reminderHour,
-                        minute = list.reminderMinute
-                    )
+                    val triggerAtMillis = list.reminderTriggerAtMillis
+                    if (triggerAtMillis != null && triggerAtMillis > System.currentTimeMillis()) {
+                        ReminderScheduler.scheduleOneTimeForList(
+                            app,
+                            listId = list.id,
+                            listName = list.name,
+                            triggerAtMillis = triggerAtMillis
+                        )
+                    } else {
+                        ReminderScheduler.cancelForList(app, list.id)
+                    }
                 } else {
                     ReminderScheduler.cancelForList(app, list.id)
                 }
             }
         }
+    }
+
+    private fun autoInsertTimeColon(input: String): String {
+        val trimmed = input.trim()
+        val digitsOnly = trimmed.filter { it.isDigit() }
+        return when {
+            trimmed.contains(':') -> trimmed
+            digitsOnly.length <= 2 -> digitsOnly
+            else -> digitsOnly.take(2) + ":" + digitsOnly.drop(2).take(2)
+        }
+    }
+
+    private fun formatReminderDateInput(triggerAtMillis: Long?): String {
+        if (triggerAtMillis == null) return ""
+        return java.time.Instant.ofEpochMilli(triggerAtMillis)
+            .atZone(java.time.ZoneId.systemDefault())
+            .toLocalDate()
+            .toString()
+    }
+
+    private fun formatReminderTimeInput(triggerAtMillis: Long?, fallbackHour: Int, fallbackMinute: Int): String {
+        return if (triggerAtMillis == null) {
+            String.format(java.util.Locale.GERMANY, "%02d:%02d", fallbackHour, fallbackMinute)
+        } else {
+            val localTime = java.time.Instant.ofEpochMilli(triggerAtMillis)
+                .atZone(java.time.ZoneId.systemDefault())
+                .toLocalTime()
+            String.format(java.util.Locale.GERMANY, "%02d:%02d", localTime.hour, localTime.minute)
+        }
+    }
+
+    private fun parseReminderTriggerMillis(dateValue: String, timeValue: String): Long? {
+        val date = runCatching { java.time.LocalDate.parse(dateValue.trim()) }.getOrNull() ?: return null
+        val match = Regex("^(\\d{1,2}):(\\d{1,2})$").find(timeValue.trim()) ?: return null
+        val hour = match.groupValues[1].toIntOrNull()?.coerceIn(0, 23) ?: return null
+        val minute = match.groupValues[2].toIntOrNull()?.coerceIn(0, 59) ?: return null
+        return date.atTime(hour, minute)
+            .atZone(java.time.ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli()
     }
 }

@@ -19,7 +19,7 @@ interface OpenMeteoForecastService {
         @Query("latitude") latitude: Double,
         @Query("longitude") longitude: Double,
         @Query("daily") daily: String = "temperature_2m_min,temperature_2m_max,precipitation_probability_max",
-        @Query("forecast_days") forecastDays: Int = 1,
+        @Query("forecast_days") forecastDays: Int = 7,
         @Query("timezone") timezone: String = "auto"
     ): ForecastResponse
 }

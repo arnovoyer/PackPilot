@@ -7,6 +7,6 @@ plugins {
 // Keep build outputs outside OneDrive to avoid file locking during Kotlin/KSP tasks.
 subprojects {
     layout.buildDirectory.set(
-        file("${System.getProperty("user.home")}/.packapp-build/${rootProject.name}/${project.name}")
+        file("${System.getProperty("user.home")}/.packapp-build/${rootProject.rootDir.name}/${project.name}")
     )
 }

@@ -16,7 +16,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         TripEntity::class,
         WeatherCacheEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 abstract class PackDatabase : RoomDatabase() {
@@ -116,6 +116,13 @@ abstract class PackDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE packing_lists ADD COLUMN weatherForecastEpochDay INTEGER")
+                db.execSQL("ALTER TABLE packing_lists ADD COLUMN reminderTriggerAtMillis INTEGER")
+            }
+        }
+
         fun getInstance(context: Context): PackDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -124,6 +131,7 @@ abstract class PackDatabase : RoomDatabase() {
                     "pack_app.db"
                 )
                     .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                    .addMigrations(MIGRATION_6_7)
                     .build()
                 INSTANCE = instance
                 instance
