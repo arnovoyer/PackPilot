@@ -35,6 +35,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DoneAll
@@ -77,6 +79,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -85,9 +88,10 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -98,6 +102,7 @@ import com.packapp.data.ActivityEventEntity
 import com.packapp.data.PackingItemEntity
 import com.packapp.data.PackingListEntity
 import com.packapp.data.WeatherSnapshot
+import com.packapp.R
 import com.packapp.ui.theme.PackPilotTheme
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -685,12 +690,12 @@ private fun DetailScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Text("Wetter & Erinnerungen", style = MaterialTheme.typography.labelLarge)
+                            Text(stringResource(R.string.automation_title), style = MaterialTheme.typography.labelLarge)
                             Text(
                                 text = if (automationExpanded) {
-                                    "Tipps: Datum als YYYY-MM-DD, Zeit als HH:mm"
+                                    stringResource(R.string.automation_hint_expanded)
                                 } else {
-                                    "Tippen zum Ein-/Ausklappen"
+                                    stringResource(R.string.automation_hint_collapsed)
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -714,7 +719,8 @@ private fun DetailScreen(
 
                         PickerField(
                             value = weatherForecastDate,
-                            label = "Wetter-Tag (YYYY-MM-DD)",
+                            label = stringResource(R.string.weather_day_label),
+                            icon = Icons.Default.DateRange,
                             modifier = Modifier.fillMaxWidth(),
                             onClick = {
                                 showDatePickerDialog(
@@ -731,7 +737,7 @@ private fun DetailScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Reminder aktiv")
+                            Text(stringResource(R.string.reminders_enabled_label))
                             Switch(
                                 checked = remindersEnabled,
                                 onCheckedChange = { enabled ->
@@ -750,7 +756,8 @@ private fun DetailScreen(
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             PickerField(
                                 value = reminderDate,
-                                label = "Push-Tag (YYYY-MM-DD)",
+                                label = stringResource(R.string.push_day_label),
+                                icon = Icons.Default.DateRange,
                                 modifier = Modifier.weight(1f),
                                 onClick = {
                                     showDatePickerDialog(
@@ -763,7 +770,8 @@ private fun DetailScreen(
                             )
                             PickerField(
                                 value = reminderTime,
-                                label = "Push-Zeit (HH:mm)",
+                                label = stringResource(R.string.push_time_label),
+                                icon = Icons.Default.AccessTime,
                                 modifier = Modifier.weight(1f),
                                 onClick = {
                                     val (initialHour, initialMinute) = parseHourMinuteOrNull(reminderTime)
@@ -882,12 +890,12 @@ private fun WeatherCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("Wetter", style = MaterialTheme.typography.labelLarge)
-                TextButton(onClick = onRefresh) { Text("Neu laden") }
+                TextButton(onClick = onRefresh) { Text(stringResource(R.string.weather_reload)) }
             }
 
             if (weather != null) {
                 Text(
-                    text = "Aktualisiert um ${formatUpdatedTime(weather.fetchedAt)}",
+                    text = stringResource(R.string.weather_updated_at, formatUpdatedTime(weather.fetchedAt)),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.fillMaxWidth()
@@ -895,9 +903,9 @@ private fun WeatherCard(
             }
 
             when {
-                loading -> Text("Lade Wetterdaten...", style = MaterialTheme.typography.bodyMedium)
+                loading -> Text(stringResource(R.string.weather_loading), style = MaterialTheme.typography.bodyMedium)
                 error != null -> Text(error, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
-                weather == null -> Text("Kein Wetter verfügbar.", style = MaterialTheme.typography.bodyMedium)
+                weather == null -> Text(stringResource(R.string.weather_unavailable), style = MaterialTheme.typography.bodyMedium)
                 else -> {
                     Text(
                         weather.locationLabel,
@@ -908,7 +916,10 @@ private fun WeatherCard(
                         ?.takeIf { it > LocalDate.now(ZoneId.systemDefault()).toEpochDay() }
                         ?.let {
                             Text(
-                                text = "Voraussage für ${LocalDate.ofEpochDay(it).format(DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.GERMANY))}",
+                                text = stringResource(
+                                    R.string.weather_forecast_for,
+                                    LocalDate.ofEpochDay(it).format(DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.GERMANY))
+                                ),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -1140,20 +1151,29 @@ private fun AddItemDialog(
 private fun PickerField(
     value: String,
     label: String,
+    icon: ImageVector,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
+    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     OutlinedTextField(
         value = value,
         onValueChange = { },
         label = { Text(label) },
         readOnly = true,
         singleLine = true,
+        trailingIcon = {
+            IconButton(onClick = onClick) {
+                Icon(icon, contentDescription = label)
+            }
+        },
         modifier = modifier
             .fillMaxWidth()
-            .pointerInput(Unit) {
-                detectTapGestures(onTap = { onClick() })
-            }
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
     )
 }
 

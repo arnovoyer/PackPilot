@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PackPilot</string>
+    <string name="automation_title">Clima y recordatorios</string>
+    <string name="automation_hint_expanded">Toca un campo para elegir fecha u hora.</string>
+    <string name="automation_hint_collapsed">Toca para expandir/contraer</string>
+    <string name="weather_day_label">Dia del clima</string>
+    <string name="push_day_label">Dia de notificacion</string>
+    <string name="push_time_label">Hora de notificacion</string>
+    <string name="reminders_enabled_label">Recordatorios activos</string>
+    <string name="weather_reload">Recargar</string>
+    <string name="weather_updated_at">Actualizado a las %1$s</string>
+    <string name="weather_loading">Cargando datos del clima...</string>
+    <string name="weather_unavailable">No hay datos del clima.</string>
+    <string name="weather_forecast_for">Pronostico para %1$s</string>
+    <string name="notification_title">Recordatorio PackPilot: %1$s</string>
+    <string name="notification_body_progress">%1$d de %2$d elementos preparados (%3$d%%).</string>
+    <string name="notification_action_open">Abrir ahora</string>
+    <string name="notification_channel_name">Recordatorios PackPilot</string>
+    <string name="notification_channel_description">Te recuerda preparar a tiempo</string>
+</resources>

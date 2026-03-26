@@ -3,7 +3,9 @@ package com.packapp.reminder
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
@@ -11,6 +13,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.packapp.MainActivity
 import com.packapp.R
 import com.packapp.data.PackDatabase
 
@@ -30,6 +33,12 @@ class ReminderWorker(
         val total = dao.getTotalCountNow(listId)
         val packed = dao.getPackedCountNow(listId)
         val percent = if (total == 0) 0 else ((packed * 100f) / total).toInt()
+        val text = applicationContext.getString(
+            R.string.notification_body_progress,
+            packed,
+            total,
+            percent
+        )
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val granted = ContextCompat.checkSelfPermission(
@@ -39,11 +48,25 @@ class ReminderWorker(
             if (!granted) return Result.success()
         }
 
+        val openIntent = Intent(applicationContext, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            applicationContext,
+            listId.toInt(),
+            openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("PackPilot Erinnerung: $listName")
-            .setContentText("$packed von $total Items gepackt ($percent%).")
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentTitle(applicationContext.getString(R.string.notification_title, listName))
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setContentIntent(pendingIntent)
+            .addAction(0, applicationContext.getString(R.string.notification_action_open), pendingIntent)
             .setAutoCancel(true)
             .build()
 
@@ -57,16 +80,18 @@ class ReminderWorker(
         const val INPUT_LIST_ID = "input_list_id"
         const val INPUT_LIST_NAME = "input_list_name"
         const val CHANNEL_ID = "packpilot_reminders"
-        private const val CHANNEL_NAME = "PackPilot Erinnerungen"
-        private const val CHANNEL_DESCRIPTION = "Erinnert dich ans rechtzeitige Packen"
         fun createChannel(context: Context) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
             val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             val existing = manager.getNotificationChannel(CHANNEL_ID)
             if (existing != null) return
 
-            val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT).apply {
-                description = CHANNEL_DESCRIPTION
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                context.getString(R.string.notification_channel_name),
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = context.getString(R.string.notification_channel_description)
             }
             manager.createNotificationChannel(channel)
         }

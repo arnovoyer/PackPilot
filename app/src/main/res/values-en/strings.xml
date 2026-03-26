@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PackPilot</string>
+    <string name="automation_title">Weather &amp; reminders</string>
+    <string name="automation_hint_expanded">Tap a field to pick a date or time.</string>
+    <string name="automation_hint_collapsed">Tap to expand/collapse</string>
+    <string name="weather_day_label">Weather day</string>
+    <string name="push_day_label">Push day</string>
+    <string name="push_time_label">Push time</string>
+    <string name="reminders_enabled_label">Reminders enabled</string>
+    <string name="weather_reload">Reload</string>
+    <string name="weather_updated_at">Updated at %1$s</string>
+    <string name="weather_loading">Loading weather data...</string>
+    <string name="weather_unavailable">No weather data available.</string>
+    <string name="weather_forecast_for">Forecast for %1$s</string>
+    <string name="notification_title">PackPilot reminder: %1$s</string>
+    <string name="notification_body_progress">%1$d of %2$d items packed (%3$d%%).</string>
+    <string name="notification_action_open">Open now</string>
+    <string name="notification_channel_name">PackPilot reminders</string>
+    <string name="notification_channel_description">Reminds you to pack in time</string>
+</resources>
