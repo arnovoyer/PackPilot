@@ -1,6 +1,6 @@
 # Gradle
-.gradle/
-build/
+/.gradle/
+/build/
 **/build/
 
 # Android Studio / IntelliJ
@@ -27,7 +27,3 @@ Thumbs.db
 
 # External redirected build cache path (if accidentally created in repo)
 .packapp-build/
-
-
-
-.gradle/

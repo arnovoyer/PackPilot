@@ -134,14 +134,14 @@ fun PackPilotRoot(viewModel: AppViewModel = viewModel()) {
             when (selectedTab) {
                 BottomTab.LISTS -> {
                     FloatingActionButton(onClick = { showAddListDialog = true }) {
-                        Icon(Icons.Default.Add, contentDescription = "Liste hinzufügen")
+                        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.cd_add_list))
                     }
                 }
 
                 BottomTab.PACKING -> {
                     if (detailUi.list != null) {
                         FloatingActionButton(onClick = { showAddItemDialog = true }) {
-                            Icon(Icons.Default.Add, contentDescription = "Item hinzufügen")
+                            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.cd_add_item))
                         }
                     }
                 }
@@ -159,19 +159,19 @@ fun PackPilotRoot(viewModel: AppViewModel = viewModel()) {
                 ) {
                 AppBottomNavItem(
                     selected = selectedTab == BottomTab.LISTS,
-                    label = "Listen",
+                    label = stringResource(R.string.nav_lists),
                     icon = { tint -> Icon(Icons.AutoMirrored.Filled.List, contentDescription = null, tint = tint) },
                     onClick = { viewModel.selectTab(BottomTab.LISTS) }
                 )
                 AppBottomNavItem(
                     selected = selectedTab == BottomTab.PACKING,
-                    label = "Packen",
+                    label = stringResource(R.string.nav_packing),
                     icon = { tint -> Icon(Icons.Default.CheckCircle, contentDescription = null, tint = tint) },
                     onClick = { viewModel.selectTab(BottomTab.PACKING) }
                 )
                 AppBottomNavItem(
                     selected = selectedTab == BottomTab.SETTINGS,
-                    label = "Settings",
+                    label = stringResource(R.string.nav_settings),
                     icon = { tint -> Icon(Icons.Default.Settings, contentDescription = null, tint = tint) },
                     onClick = { viewModel.selectTab(BottomTab.SETTINGS) }
                 )
@@ -226,10 +226,10 @@ fun PackPilotRoot(viewModel: AppViewModel = viewModel()) {
 
         if (showAddListDialog) {
             AddNameDialog(
-                title = "Neue Packliste",
-                label = "Name der Liste",
+                title = stringResource(R.string.dialog_new_list_title),
+                label = stringResource(R.string.dialog_list_name_label),
                 value = homeUi.newListName,
-                confirmText = "Erstellen",
+                confirmText = stringResource(R.string.action_create),
                 onValueChange = viewModel::onNewListNameChange,
                 onDismiss = {
                     showAddListDialog = false
@@ -246,11 +246,11 @@ fun PackPilotRoot(viewModel: AppViewModel = viewModel()) {
 
         if (showAddItemDialog && detailUi.list != null) {
             AddItemDialog(
-                title = "Neues Item",
-                label = "Was musst du einpacken?",
+                title = stringResource(R.string.dialog_new_item_title),
+                label = stringResource(R.string.dialog_new_item_label),
                 value = detailUi.newItemTitle,
                 weightValue = detailUi.newItemWeight,
-                confirmText = "Hinzufügen",
+                confirmText = stringResource(R.string.action_add),
                 onValueChange = viewModel::onNewItemTitleChange,
                 onWeightChange = viewModel::onNewItemWeightChange,
                 onDismiss = {
@@ -329,7 +329,7 @@ private fun HomeScreen(
         TopAppBar(
             title = {
                 Column {
-                    Text("Meine Packlisten", fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.home_title_lists), fontWeight = FontWeight.SemiBold)
                     Text(
                         text = "${uiState.lists.size} Listen",
                         style = MaterialTheme.typography.bodySmall,
@@ -339,10 +339,10 @@ private fun HomeScreen(
             },
             actions = {
                 IconButton(onClick = { showSearch = !showSearch }) {
-                    Icon(Icons.Default.Search, contentDescription = "Suche")
+                    Icon(Icons.Default.Search, contentDescription = stringResource(R.string.cd_search))
                 }
                 IconButton(onClick = { showFilters = !showFilters }) {
-                    Icon(Icons.Default.FilterList, contentDescription = "Filter einstellen")
+                    Icon(Icons.Default.FilterList, contentDescription = stringResource(R.string.cd_filters))
                 }
             }
         )
@@ -352,7 +352,7 @@ private fun HomeScreen(
                 value = uiState.searchQuery,
                 onValueChange = { onSearchQueryChange(if (it.isEmpty()) it else it[0].uppercase() + it.drop(1)) },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Listen durchsuchen") },
+                label = { Text(stringResource(R.string.home_search_label)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
             )
@@ -368,51 +368,51 @@ private fun HomeScreen(
                     modifier = Modifier.padding(12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text("Filter", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.home_filter_title), style = MaterialTheme.typography.labelLarge)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilterChip(
                             selected = uiState.filterMode == HomeFilterMode.ALL,
                             onClick = { onFilterModeChange(HomeFilterMode.ALL) },
-                            label = { Text("Alle") }
+                            label = { Text(stringResource(R.string.filter_all)) }
                         )
                         FilterChip(
                             selected = uiState.filterMode == HomeFilterMode.IN_PROGRESS,
                             onClick = { onFilterModeChange(HomeFilterMode.IN_PROGRESS) },
-                            label = { Text("Aktiv") }
+                            label = { Text(stringResource(R.string.filter_active)) }
                         )
                         FilterChip(
                             selected = uiState.filterMode == HomeFilterMode.COMPLETED,
                             onClick = { onFilterModeChange(HomeFilterMode.COMPLETED) },
-                            label = { Text("Fertig") }
+                            label = { Text(stringResource(R.string.filter_done)) }
                         )
                         FilterChip(
                             selected = uiState.filterMode == HomeFilterMode.EMPTY,
                             onClick = { onFilterModeChange(HomeFilterMode.EMPTY) },
-                            label = { Text("Leer") }
+                            label = { Text(stringResource(R.string.filter_empty)) }
                         )
                     }
 
-                    Text("Sortierung", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.home_sort_title), style = MaterialTheme.typography.labelLarge)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilterChip(
                             selected = uiState.sortMode == HomeSortMode.NEWEST,
                             onClick = { onSortModeChange(HomeSortMode.NEWEST) },
-                            label = { Text("Neu") }
+                            label = { Text(stringResource(R.string.sort_new)) }
                         )
                         FilterChip(
                             selected = uiState.sortMode == HomeSortMode.OLDEST,
                             onClick = { onSortModeChange(HomeSortMode.OLDEST) },
-                            label = { Text("Alt") }
+                            label = { Text(stringResource(R.string.sort_old)) }
                         )
                         FilterChip(
                             selected = uiState.sortMode == HomeSortMode.NAME_AZ,
                             onClick = { onSortModeChange(HomeSortMode.NAME_AZ) },
-                            label = { Text("A-Z") }
+                            label = { Text(stringResource(R.string.sort_az)) }
                         )
                         FilterChip(
                             selected = uiState.sortMode == HomeSortMode.PROGRESS_HIGH,
                             onClick = { onSortModeChange(HomeSortMode.PROGRESS_HIGH) },
-                            label = { Text("Fortschritt") }
+                            label = { Text(stringResource(R.string.sort_progress)) }
                         )
                     }
                 }
@@ -492,13 +492,13 @@ private fun ListCard(
                     value = editingValue,
                     onValueChange = { onRenameInputChange(if (it.isEmpty()) it else it[0].uppercase() + it.drop(1)) },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Listenname") },
+                    label = { Text(stringResource(R.string.dialog_list_name_label)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words)
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = onCommitRename) { Text("Speichern") }
-                    OutlinedButton(onClick = onCancelRename) { Text("Abbrechen") }
+                    Button(onClick = onCommitRename) { Text(stringResource(R.string.action_save)) }
+                    OutlinedButton(onClick = onCancelRename) { Text(stringResource(R.string.action_cancel)) }
                 }
             } else {
                 Row(
@@ -524,18 +524,18 @@ private fun ListCard(
                         )
                     }
                     IconButton(onClick = onStartRename) {
-                        Icon(Icons.Default.Edit, contentDescription = "Umbenennen")
+                        Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.action_rename))
                     }
                     Box {
                         IconButton(onClick = { menuExpanded = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "Mehr")
+                            Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.cd_more))
                         }
                         DropdownMenu(
                             expanded = menuExpanded,
                             onDismissRequest = { menuExpanded = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Umbenennen") },
+                                text = { Text(stringResource(R.string.action_rename)) },
                                 onClick = {
                                     menuExpanded = false
                                     onStartRename()
@@ -545,7 +545,7 @@ private fun ListCard(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Layout kopieren") },
+                                text = { Text(stringResource(R.string.action_copy_layout)) },
                                 onClick = {
                                     menuExpanded = false
                                     onDuplicateLayout()
@@ -555,7 +555,7 @@ private fun ListCard(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Löschen") },
+                                text = { Text(stringResource(R.string.action_delete)) },
                                 onClick = {
                                     menuExpanded = false
                                     onDelete()
@@ -568,7 +568,7 @@ private fun ListCard(
                     }
                 }
                 Button(onClick = onOpen, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
-                    Text("Öffnen")
+                    Text(stringResource(R.string.action_open))
                 }
             }
         }
@@ -654,14 +654,14 @@ private fun DetailScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
                     }
                 },
                 actions = {
                     TextButton(onClick = onReset) {
                         Icon(Icons.Default.Refresh, contentDescription = null)
                         Spacer(modifier = Modifier.padding(horizontal = 2.dp))
-                        Text("Reset")
+                        Text(stringResource(R.string.action_reset))
                     }
                 }
             )
@@ -715,7 +715,7 @@ private fun DetailScreen(
                         OutlinedTextField(
                             value = weatherLocation,
                             onValueChange = { weatherLocation = it.replaceFirstChar { c -> c.uppercase() } },
-                            label = { Text("Wetter-Ort (z. B. Wien)") },
+                            label = { Text(stringResource(R.string.weather_location_label)) },
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
                             modifier = Modifier.fillMaxWidth()
@@ -812,7 +812,7 @@ private fun DetailScreen(
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Für diese Liste speichern")
+                            Text(stringResource(R.string.action_save_for_list))
                         }
                     }
                 }
@@ -832,7 +832,7 @@ private fun DetailScreen(
 
         if (uiState.items.isEmpty()) {
             item {
-                EmptyState("Tippe auf +, um dein erstes Item hinzuzufügen.")
+                EmptyState(stringResource(R.string.empty_add_first_item))
             }
         } else {
             items(uiState.items, key = { it.id }) { item ->
@@ -848,14 +848,14 @@ private fun DetailScreen(
     if (showSuccess) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { showSuccess = false },
-            title = { Text("Alles gepackt") },
-            text = { Text("Stark, deine Liste ist vollständig. Du kannst jetzt resetten oder zur Übersicht zurück.") },
+            title = { Text(stringResource(R.string.success_title)) },
+            text = { Text(stringResource(R.string.success_body)) },
             confirmButton = {
                 Button(onClick = {
                     showSuccess = false
                     onBack()
                 }) {
-                    Text("Zur Listenübersicht")
+                    Text(stringResource(R.string.action_to_list_overview))
                 }
             },
             dismissButton = {
@@ -863,7 +863,7 @@ private fun DetailScreen(
                     showSuccess = false
                     onReset()
                 }) {
-                    Text("Liste zurücksetzen")
+                    Text(stringResource(R.string.action_reset_list))
                 }
             }
         )
@@ -893,7 +893,7 @@ private fun WeatherCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Wetter", style = MaterialTheme.typography.labelLarge)
+                Text(stringResource(R.string.weather_title), style = MaterialTheme.typography.labelLarge)
                 TextButton(onClick = onRefresh) { Text(stringResource(R.string.weather_reload)) }
             }
 
@@ -934,7 +934,7 @@ private fun WeatherCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     if (suggestions.isNotEmpty()) {
-                        Text("Vorschläge: ${suggestions.joinToString(", ")}", style = MaterialTheme.typography.bodySmall)
+                        Text(stringResource(R.string.weather_suggestions, suggestions.joinToString(", ")), style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }
@@ -969,7 +969,7 @@ private fun ProgressStrip(
             modifier = Modifier.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Text("Fortschritt", style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.progress_title), style = MaterialTheme.typography.labelLarge)
             Text(
                 text = "$packedCount von $totalCount gepackt ($percent%)",
                 style = MaterialTheme.typography.titleSmall,
@@ -1498,7 +1498,7 @@ private fun SettingsScreen(
             .padding(top = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        TopAppBar(title = { Text("Einstellungen", fontWeight = FontWeight.SemiBold) })
+        TopAppBar(title = { Text(stringResource(R.string.settings_title), fontWeight = FontWeight.SemiBold) })
 
         Surface(
             tonalElevation = 2.dp,
@@ -1506,9 +1506,9 @@ private fun SettingsScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Designmodus", style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.settings_design_title), style = MaterialTheme.typography.titleSmall)
                 Text(
-                    "Wähle den Stil für die gesamte App.",
+                    stringResource(R.string.settings_design_description),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1516,24 +1516,27 @@ private fun SettingsScreen(
                     FilterChip(
                         selected = uiState.designMode == DesignMode.MINIMAL,
                         onClick = { onDesignModeSelected(DesignMode.MINIMAL) },
-                        label = { Text("Minimal") }
+                            label = { Text(stringResource(R.string.design_minimal)) }
                     )
                     FilterChip(
                         selected = uiState.designMode == DesignMode.SPORTLICH,
                         onClick = { onDesignModeSelected(DesignMode.SPORTLICH) },
-                        label = { Text("Sportlich") }
+                            label = { Text(stringResource(R.string.design_sporty)) }
                     )
                 }
                 HorizontalDivider()
                 Text(
-                    "Aktiver Modus: ${if (uiState.designMode == DesignMode.MINIMAL) "Minimal" else "Sportlich"}",
+                    stringResource(
+                        R.string.settings_active_mode,
+                        if (uiState.designMode == DesignMode.MINIMAL) stringResource(R.string.design_minimal) else stringResource(R.string.design_sporty)
+                    ),
                     style = MaterialTheme.typography.bodyMedium
                 )
 
                 HorizontalDivider()
-                Text("Darstellung", style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.settings_theme_title), style = MaterialTheme.typography.titleSmall)
                 Text(
-                    "Wähle Hell-/Dunkelmodus für die App.",
+                    stringResource(R.string.settings_theme_description),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1541,17 +1544,17 @@ private fun SettingsScreen(
                     FilterChip(
                         selected = uiState.themeMode == ThemeMode.SYSTEM,
                         onClick = { onThemeModeSelected(ThemeMode.SYSTEM) },
-                        label = { Text("System") }
+                        label = { Text(stringResource(R.string.theme_system)) }
                     )
                     FilterChip(
                         selected = uiState.themeMode == ThemeMode.LIGHT,
                         onClick = { onThemeModeSelected(ThemeMode.LIGHT) },
-                        label = { Text("Hell") }
+                        label = { Text(stringResource(R.string.theme_light)) }
                     )
                     FilterChip(
                         selected = uiState.themeMode == ThemeMode.DARK,
                         onClick = { onThemeModeSelected(ThemeMode.DARK) },
-                        label = { Text("Dunkel") }
+                        label = { Text(stringResource(R.string.theme_dark)) }
                     )
                 }
 
@@ -1573,9 +1576,9 @@ private fun SettingsScreen(
                 }
 
                 HorizontalDivider()
-                Text("Gewichtslimit", style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.settings_weight_title), style = MaterialTheme.typography.titleSmall)
                 Text(
-                    "Lege ein Kofferlimit fest. Die Gewichtsanzeige hilft dir beim Einhalten.",
+                    stringResource(R.string.settings_weight_description),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1586,7 +1589,7 @@ private fun SettingsScreen(
                             input.toIntOrNull()?.let(onLuggageLimitKgChanged)
                         }
                     },
-                    label = { Text("Limit (kg)") },
+                    label = { Text(stringResource(R.string.settings_weight_limit_label)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
