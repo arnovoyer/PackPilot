@@ -27,7 +27,9 @@ class ReminderWorker(
 
         val listId = inputData.getLong(INPUT_LIST_ID, -1L)
         if (listId <= 0L) return Result.success()
-        val listName = inputData.getString(INPUT_LIST_NAME).orEmpty().ifBlank { "deine Liste" }
+        val listName = inputData.getString(INPUT_LIST_NAME).orEmpty().ifBlank {
+            applicationContext.getString(R.string.notification_default_list_name)
+        }
 
         val dao = PackDatabase.getInstance(applicationContext).packDao()
         val total = dao.getTotalCountNow(listId)

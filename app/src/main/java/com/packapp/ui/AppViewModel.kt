@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.packapp.R
 import com.packapp.data.ActivityEventEntity
 import com.packapp.data.PackDatabase
 import com.packapp.data.PackRepository
@@ -459,7 +460,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     it.copy(
                         weather = null,
                         weatherSuggestions = emptyList(),
-                        weatherError = "Bitte in dieser Packliste einen Ort setzen."
+                        weatherError = getApplication<Application>().getString(R.string.weather_set_location_error)
                     )
                 }
                 return@launch
@@ -477,7 +478,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                         weatherLoading = false,
                         weather = null,
                         weatherSuggestions = emptyList(),
-                        weatherError = "Wetterdaten konnten nicht geladen werden."
+                        weatherError = getApplication<Application>().getString(R.string.weather_load_error)
                     )
                 }
             } else {
@@ -886,12 +887,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun formatReminderTimeInput(triggerAtMillis: Long?, fallbackHour: Int, fallbackMinute: Int): String {
         return if (triggerAtMillis == null) {
-            String.format(java.util.Locale.GERMANY, "%02d:%02d", fallbackHour, fallbackMinute)
+            String.format(java.util.Locale.getDefault(), "%02d:%02d", fallbackHour, fallbackMinute)
         } else {
             val localTime = java.time.Instant.ofEpochMilli(triggerAtMillis)
                 .atZone(java.time.ZoneId.systemDefault())
                 .toLocalTime()
-            String.format(java.util.Locale.GERMANY, "%02d:%02d", localTime.hour, localTime.minute)
+            String.format(java.util.Locale.getDefault(), "%02d:%02d", localTime.hour, localTime.minute)
         }
     }
 
@@ -906,3 +907,4 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             .toEpochMilli()
     }
 }
+

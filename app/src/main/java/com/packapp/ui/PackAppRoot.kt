@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Context
+import android.content.res.Resources
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -333,7 +334,7 @@ private fun HomeScreen(
                 Column {
                     Text(stringResource(R.string.home_title_lists), fontWeight = FontWeight.SemiBold)
                     Text(
-                        text = "${uiState.lists.size} Listen",
+                        text = stringResource(R.string.home_list_count, uiState.lists.size),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -429,9 +430,9 @@ private fun HomeScreen(
             ) {
                 EmptyState(
                     if (uiState.searchQuery.isNotBlank()) {
-                        "Keine Liste passt zu deiner Suche/Filterung."
+                        stringResource(R.string.home_empty_search)
                     } else {
-                        "Noch keine Liste vorhanden. Tippe auf +, um zu starten."
+                        stringResource(R.string.home_empty_no_lists)
                     }
                 )
             }
@@ -517,9 +518,9 @@ private fun ListCard(
                         )
                         Text(
                             text = if (totalCount == 0) {
-                                "Noch keine Items"
+                                stringResource(R.string.home_no_items)
                             } else {
-                                "$packedCount von $totalCount gepackt"
+                                stringResource(R.string.home_packed_of_total, packedCount, totalCount)
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -609,7 +610,7 @@ private fun DetailScreen(
                 shape = MaterialTheme.shapes.extraLarge,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                EmptyState("Öffne zuerst eine Liste im Tab Listen.")
+                EmptyState(stringResource(R.string.detail_open_list_first))
             }
         }
         return
@@ -787,7 +788,7 @@ private fun DetailScreen(
                                         initialHour = initialHour,
                                         initialMinute = initialMinute
                                     ) { selectedHour, selectedMinute ->
-                                        reminderTime = autoInsertTimeColon(String.format(Locale.GERMANY, "%02d%02d", selectedHour, selectedMinute))
+                                        reminderTime = autoInsertTimeColon(String.format(Locale.getDefault(), "%02d%02d", selectedHour, selectedMinute))
                                     }
                                 }
                             )
@@ -924,14 +925,19 @@ private fun WeatherCard(
                             Text(
                                 text = stringResource(
                                     R.string.weather_forecast_for,
-                                    LocalDate.ofEpochDay(it).format(DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.GERMANY))
+                                    LocalDate.ofEpochDay(it).format(DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.getDefault()))
                                 ),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     Text(
-                        "Min ${weather.temperatureMinC}°C · Max ${weather.temperatureMaxC}°C · Regen ${weather.precipitationProbabilityMax}%",
+                        stringResource(
+                            R.string.weather_min_max_rain,
+                            weather.temperatureMinC,
+                            weather.temperatureMaxC,
+                            weather.precipitationProbabilityMax
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -973,12 +979,12 @@ private fun ProgressStrip(
         ) {
             Text(stringResource(R.string.progress_title), style = MaterialTheme.typography.labelLarge)
             Text(
-                text = "$packedCount von $totalCount gepackt ($percent%)",
+                text = stringResource(R.string.progress_packed_with_percent, packedCount, totalCount, percent),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                text = "Gewicht: $packedWeightText / $totalWeightText",
+                text = stringResource(R.string.progress_weight_line, packedWeightText, totalWeightText),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -1036,7 +1042,7 @@ private fun SwipePackItem(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.DoneAll, contentDescription = null)
                     Spacer(modifier = Modifier.padding(horizontal = 4.dp))
-                    Text("Gepackt")
+                    Text(stringResource(R.string.swipe_packed))
                 }
             }
         }
@@ -1099,7 +1105,7 @@ private fun AddNameDialog(
             Button(onClick = onConfirm) { Text(confirmText) }
         },
         dismissButton = {
-            OutlinedButton(onClick = onDismiss) { Text("Abbrechen") }
+            OutlinedButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         }
     )
 }
@@ -1137,7 +1143,7 @@ private fun AddItemDialog(
                             onWeightChange(input)
                         }
                     },
-                    label = { Text("Gewicht in Gramm (optional)") },
+                    label = { Text(stringResource(R.string.weight_grams_optional)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth()
@@ -1148,7 +1154,7 @@ private fun AddItemDialog(
             Button(onClick = onConfirm) { Text(confirmText) }
         },
         dismissButton = {
-            OutlinedButton(onClick = onDismiss) { Text("Abbrechen") }
+            OutlinedButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         }
     )
 }
@@ -1245,13 +1251,13 @@ private fun formatReminderDateForInput(triggerAtMillis: Long?): String {
 
 private fun formatReminderTimeForInput(triggerAtMillis: Long?, fallbackHour: Int, fallbackMinute: Int): String {
     if (triggerAtMillis == null) {
-        return String.format(Locale.GERMANY, "%02d:%02d", fallbackHour, fallbackMinute)
+        return String.format(Locale.getDefault(), "%02d:%02d", fallbackHour, fallbackMinute)
     }
     val localDateTime = LocalDateTime.ofInstant(
         Date(triggerAtMillis).toInstant(),
         ZoneId.systemDefault()
     )
-    return String.format(Locale.GERMANY, "%02d:%02d", localDateTime.hour, localDateTime.minute)
+    return String.format(Locale.getDefault(), "%02d:%02d", localDateTime.hour, localDateTime.minute)
 }
 
 private fun parseEpochDayFromInput(value: String): Long? {
@@ -1293,7 +1299,7 @@ private fun parseReminderTriggerMillis(dateValue: String, timeValue: String): Lo
 }
 
 private fun formatUpdatedTime(timestamp: Long): String {
-    return SimpleDateFormat("HH:mm", Locale.GERMANY).format(Date(timestamp))
+    return SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(timestamp))
 }
 
 private fun showDatePickerDialog(
@@ -1360,13 +1366,13 @@ private fun OnboardingOverlay(onDismiss: () -> Unit) {
                 modifier = Modifier.padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text("Willkommen bei PackPilot", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text("Kurzstart:", style = MaterialTheme.typography.titleSmall)
-                Text("1. Im Tab Listen per + eine neue Liste erstellen.")
-                Text("2. Liste öffnen und im Tab Packen per + Items ergänzen.")
-                Text("3. In Einstellungen passt du Design und Limits an.")
+                Text(stringResource(R.string.onboarding_welcome), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.onboarding_quickstart_title), style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.onboarding_step_1))
+                Text(stringResource(R.string.onboarding_step_2))
+                Text(stringResource(R.string.onboarding_step_3))
                 Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
-                    Text("Loslegen")
+                    Text(stringResource(R.string.onboarding_action_start))
                 }
             }
         }
@@ -1389,22 +1395,15 @@ private fun StatCard(modifier: Modifier, title: String, value: String) {
 
 @Composable
 private fun HistoryCard(entry: ActivityEventEntity) {
-    val headline = when (entry.eventType) {
-        "LIST_CREATED" -> "Liste erstellt"
-        "LIST_RENAMED" -> "Liste umbenannt"
-        "LIST_DELETED" -> "Liste gelöscht"
-        "LIST_LAYOUT_COPIED" -> "Layout kopiert"
-        "ITEM_ADDED" -> "Item hinzugefügt"
-        "ITEM_PACKED" -> "Item gepackt"
-        "ITEM_UNPACKED" -> "Item entpackt"
-        "LIST_RESET" -> "Liste zurückgesetzt"
-        else -> entry.eventType
-    }
+    val resources = LocalContext.current.resources
+    val headlineRes = historyHeadlineRes(entry.eventType)
+    val headline = if (headlineRes != 0) stringResource(headlineRes) else entry.eventType
     val detail = listOfNotNull(entry.listName, entry.itemTitle)
         .joinToString(" · ")
-        .ifBlank { "Aktion ohne weitere Details" }
-    val timeLabel = formatEventTime(entry.timestamp)
-    val badgeLabel = eventBadgeLabel(entry.eventType)
+        .ifBlank { stringResource(R.string.history_no_details) }
+    val timeLabel = formatEventTime(entry.timestamp, resources)
+    val badgeRes = eventBadgeRes(entry.eventType)
+    val badgeLabel = if (badgeRes != 0) stringResource(badgeRes) else stringResource(R.string.history_badge_default)
     val badgeColor = eventBadgeColor(entry.eventType)
 
     Surface(
@@ -1440,16 +1439,28 @@ private fun HistoryCard(entry: ActivityEventEntity) {
     }
 }
 
-private fun eventBadgeLabel(eventType: String): String = when (eventType) {
-    "ITEM_PACKED" -> "Packen"
-    "ITEM_UNPACKED" -> "Entpacken"
-    "ITEM_ADDED" -> "Item"
-    "LIST_CREATED" -> "Liste"
-    "LIST_RENAMED" -> "Liste"
-    "LIST_DELETED" -> "Liste"
-    "LIST_LAYOUT_COPIED" -> "Kopie"
-    "LIST_RESET" -> "Reset"
-    else -> "Event"
+private fun eventBadgeRes(eventType: String): Int = when (eventType) {
+    "ITEM_PACKED" -> R.string.history_badge_pack
+    "ITEM_UNPACKED" -> R.string.history_badge_unpack
+    "ITEM_ADDED" -> R.string.history_badge_item
+    "LIST_CREATED" -> R.string.history_badge_list
+    "LIST_RENAMED" -> R.string.history_badge_list
+    "LIST_DELETED" -> R.string.history_badge_list
+    "LIST_LAYOUT_COPIED" -> R.string.history_badge_copy
+    "LIST_RESET" -> R.string.history_badge_reset
+    else -> 0
+}
+
+private fun historyHeadlineRes(eventType: String): Int = when (eventType) {
+    "LIST_CREATED" -> R.string.history_headline_list_created
+    "LIST_RENAMED" -> R.string.history_headline_list_renamed
+    "LIST_DELETED" -> R.string.history_headline_list_deleted
+    "LIST_LAYOUT_COPIED" -> R.string.history_headline_list_layout_copied
+    "ITEM_ADDED" -> R.string.history_headline_item_added
+    "ITEM_PACKED" -> R.string.history_headline_item_packed
+    "ITEM_UNPACKED" -> R.string.history_headline_item_unpacked
+    "LIST_RESET" -> R.string.history_headline_list_reset
+    else -> 0
 }
 
 private fun eventBadgeColor(eventType: String): Color = when (eventType) {
@@ -1464,21 +1475,21 @@ private fun eventBadgeColor(eventType: String): Color = when (eventType) {
     else -> Color(0xFF546E7A)
 }
 
-private fun formatEventTime(timestamp: Long): String {
+private fun formatEventTime(timestamp: Long, resources: Resources): String {
     val eventDate = Date(timestamp)
     val now = Calendar.getInstance()
     val eventCal = Calendar.getInstance().apply { timeInMillis = timestamp }
 
     val datePrefix = when {
         now.get(Calendar.YEAR) == eventCal.get(Calendar.YEAR) &&
-            now.get(Calendar.DAY_OF_YEAR) == eventCal.get(Calendar.DAY_OF_YEAR) -> "Heute"
+            now.get(Calendar.DAY_OF_YEAR) == eventCal.get(Calendar.DAY_OF_YEAR) -> resources.getString(R.string.time_today)
         now.get(Calendar.YEAR) == eventCal.get(Calendar.YEAR) &&
-            now.get(Calendar.DAY_OF_YEAR) - eventCal.get(Calendar.DAY_OF_YEAR) == 1 -> "Gestern"
-        else -> SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(eventDate)
+            now.get(Calendar.DAY_OF_YEAR) - eventCal.get(Calendar.DAY_OF_YEAR) == 1 -> resources.getString(R.string.time_yesterday)
+        else -> SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(eventDate)
     }
 
-    val time = SimpleDateFormat("HH:mm", Locale.GERMANY).format(eventDate)
-    return "$datePrefix · $time"
+    val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(eventDate)
+    return resources.getString(R.string.time_date_compound, datePrefix, time)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1640,19 +1651,19 @@ private fun SuccessScreen(
                 modifier = Modifier.alpha(0.95f)
             )
             Text(
-                text = "Alles gepackt!",
+                text = stringResource(R.string.success_title),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "Sehr gut gemacht. Du bist bereit.",
+                text = stringResource(R.string.success_body),
                 style = MaterialTheme.typography.bodyLarge
             )
             Button(onClick = onBackToHome, modifier = Modifier.fillMaxWidth()) {
-                Text("Zur Listenübersicht")
+                Text(stringResource(R.string.action_to_list_overview))
             }
             OutlinedButton(onClick = onReset, modifier = Modifier.fillMaxWidth()) {
-                Text("Liste zurücksetzen")
+                Text(stringResource(R.string.action_reset_list))
             }
         }
     }
