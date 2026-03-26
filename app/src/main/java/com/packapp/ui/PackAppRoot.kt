@@ -24,11 +24,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.semantics.Role
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -1189,17 +1191,16 @@ private fun LanguagePickerDialog(onSelect: (AppLanguage) -> Unit) {
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.language_picker_description))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    AppLanguage.entries
-                        .filter { it != AppLanguage.SYSTEM }
-                        .forEach { language ->
-                            FilterChip(
-                                selected = false,
-                                onClick = { onSelect(language) },
-                                label = { Text(languageLabel(language)) }
-                            )
+                AppLanguage.entries
+                    .filter { it != AppLanguage.SYSTEM }
+                    .forEach { language ->
+                        OutlinedButton(
+                            onClick = { onSelect(language) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(languageLabel(language))
                         }
-                }
+                    }
             }
         },
         confirmButton = {
@@ -1494,8 +1495,9 @@ private fun SettingsScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(contentPadding)
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp)
-            .padding(top = 12.dp),
+            .padding(top = 12.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         TopAppBar(title = { Text(stringResource(R.string.settings_title), fontWeight = FontWeight.SemiBold) })
@@ -1565,12 +1567,13 @@ private fun SettingsScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     AppLanguage.entries.forEach { language ->
                         FilterChip(
                             selected = uiState.language == language,
                             onClick = { onLanguageSelected(language) },
-                            label = { Text(languageLabel(language)) }
+                            label = { Text(languageLabel(language)) },
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }
