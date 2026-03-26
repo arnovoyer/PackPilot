@@ -29,7 +29,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.semantics.Role
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -79,7 +78,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -122,6 +120,7 @@ fun PackPilotRoot(viewModel: AppViewModel = viewModel()) {
     val detailUi by viewModel.detailUiState.collectAsStateWithLifecycle()
     val settingsUi by viewModel.settingsUiState.collectAsStateWithLifecycle()
     val showOnboarding by viewModel.showOnboarding.collectAsStateWithLifecycle()
+    val showLanguagePicker by viewModel.showLanguagePicker.collectAsStateWithLifecycle()
 
     var showAddListDialog by remember { mutableStateOf(false) }
     var showAddItemDialog by remember { mutableStateOf(false) }
@@ -216,8 +215,13 @@ fun PackPilotRoot(viewModel: AppViewModel = viewModel()) {
                 uiState = settingsUi,
                 onDesignModeSelected = viewModel::setDesignMode,
                 onThemeModeSelected = viewModel::setThemeMode,
-                onLuggageLimitKgChanged = viewModel::setLuggageLimitKg
+                onLuggageLimitKgChanged = viewModel::setLuggageLimitKg,
+                onLanguageSelected = viewModel::setLanguage
             )
+        }
+
+        if (showLanguagePicker) {
+            LanguagePickerDialog(onSelect = viewModel::setLanguage)
         }
 
         if (showAddListDialog) {
@@ -1177,6 +1181,45 @@ private fun PickerField(
     )
 }
 
+@Composable
+private fun LanguagePickerDialog(onSelect: (AppLanguage) -> Unit) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = { },
+        title = { Text(stringResource(R.string.language_picker_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.language_picker_description))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AppLanguage.entries
+                        .filter { it != AppLanguage.SYSTEM }
+                        .forEach { language ->
+                            FilterChip(
+                                selected = false,
+                                onClick = { onSelect(language) },
+                                label = { Text(languageLabel(language)) }
+                            )
+                        }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSelect(AppLanguage.SYSTEM) }) {
+                Text(stringResource(R.string.language_system_default))
+            }
+        }
+    )
+}
+
+@Composable
+private fun languageLabel(language: AppLanguage): String = when (language) {
+    AppLanguage.SYSTEM -> stringResource(R.string.language_system)
+    AppLanguage.DE -> "Deutsch"
+    AppLanguage.EN -> "English"
+    AppLanguage.ES -> "Espanol"
+    AppLanguage.FR -> "Francais"
+    AppLanguage.IT -> "Italiano"
+}
+
 private fun formatDuration(seconds: Long?): String {
     if (seconds == null || seconds < 0) return "--:--"
     val minutes = seconds / 60
@@ -1444,7 +1487,8 @@ private fun SettingsScreen(
     uiState: SettingsUiState,
     onDesignModeSelected: (DesignMode) -> Unit,
     onThemeModeSelected: (ThemeMode) -> Unit,
-    onLuggageLimitKgChanged: (Int) -> Unit
+    onLuggageLimitKgChanged: (Int) -> Unit,
+    onLanguageSelected: (AppLanguage) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -1509,6 +1553,23 @@ private fun SettingsScreen(
                         onClick = { onThemeModeSelected(ThemeMode.DARK) },
                         label = { Text("Dunkel") }
                     )
+                }
+
+                HorizontalDivider()
+                Text(stringResource(R.string.settings_language_title), style = MaterialTheme.typography.titleSmall)
+                Text(
+                    stringResource(R.string.settings_language_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AppLanguage.entries.forEach { language ->
+                        FilterChip(
+                            selected = uiState.language == language,
+                            onClick = { onLanguageSelected(language) },
+                            label = { Text(languageLabel(language)) }
+                        )
+                    }
                 }
 
                 HorizontalDivider()

@@ -18,4 +18,10 @@
     <string name="notification_action_open">Jetzt öffnen</string>
     <string name="notification_channel_name">PackPilot Erinnerungen</string>
     <string name="notification_channel_description">Erinnert dich ans rechtzeitige Packen</string>
+    <string name="settings_language_title">Sprache</string>
+    <string name="settings_language_description">Wahle die Sprache fur die App.</string>
+    <string name="language_picker_title">Sprache auswahlen</string>
+    <string name="language_picker_description">Welche Sprache mochtest du verwenden?</string>
+    <string name="language_system_default">System verwenden</string>
+    <string name="language_system">System</string>
 </resources>

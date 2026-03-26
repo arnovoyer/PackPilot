@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PackPilot</string>
+    <string name="automation_title">Meteo et rappels</string>
+    <string name="automation_hint_expanded">Touchez un champ pour choisir une date ou une heure.</string>
+    <string name="automation_hint_collapsed">Touchez pour ouvrir/fermer</string>
+    <string name="weather_day_label">Jour meteo</string>
+    <string name="push_day_label">Jour de notification</string>
+    <string name="push_time_label">Heure de notification</string>
+    <string name="reminders_enabled_label">Rappels actives</string>
+    <string name="weather_reload">Recharger</string>
+    <string name="weather_updated_at">Mis a jour a %1$s</string>
+    <string name="weather_loading">Chargement des donnees meteo...</string>
+    <string name="weather_unavailable">Aucune meteo disponible.</string>
+    <string name="weather_forecast_for">Prevision pour %1$s</string>
+    <string name="notification_title">Rappel PackPilot: %1$s</string>
+    <string name="notification_body_progress">%1$d de %2$d elements prets (%3$d%%).</string>
+    <string name="notification_action_open">Ouvrir</string>
+    <string name="notification_channel_name">Rappels PackPilot</string>
+    <string name="notification_channel_description">Vous rappelle de preparer a temps</string>
+    <string name="settings_language_title">Langue</string>
+    <string name="settings_language_description">Choisissez la langue de l\'application.</string>
+    <string name="language_picker_title">Choisir la langue</string>
+    <string name="language_picker_description">Quelle langue voulez-vous utiliser?</string>
+    <string name="language_system_default">Utiliser le systeme</string>
+    <string name="language_system">Systeme</string>
+</resources>

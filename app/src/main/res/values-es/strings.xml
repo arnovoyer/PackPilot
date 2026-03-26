@@ -18,4 +18,10 @@
     <string name="notification_action_open">Abrir ahora</string>
     <string name="notification_channel_name">Recordatorios PackPilot</string>
     <string name="notification_channel_description">Te recuerda preparar a tiempo</string>
+    <string name="settings_language_title">Idioma</string>
+    <string name="settings_language_description">Elige el idioma de la app.</string>
+    <string name="language_picker_title">Elegir idioma</string>
+    <string name="language_picker_description">Que idioma quieres usar?</string>
+    <string name="language_system_default">Usar sistema</string>
+    <string name="language_system">Sistema</string>
 </resources>

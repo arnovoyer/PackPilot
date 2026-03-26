@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PackPilot</string>
+    <string name="automation_title">Meteo e promemoria</string>
+    <string name="automation_hint_expanded">Tocca un campo per scegliere data o ora.</string>
+    <string name="automation_hint_collapsed">Tocca per espandere/comprimere</string>
+    <string name="weather_day_label">Giorno meteo</string>
+    <string name="push_day_label">Giorno notifica</string>
+    <string name="push_time_label">Ora notifica</string>
+    <string name="reminders_enabled_label">Promemoria attivi</string>
+    <string name="weather_reload">Ricarica</string>
+    <string name="weather_updated_at">Aggiornato alle %1$s</string>
+    <string name="weather_loading">Caricamento dati meteo...</string>
+    <string name="weather_unavailable">Nessun dato meteo disponibile.</string>
+    <string name="weather_forecast_for">Previsione per %1$s</string>
+    <string name="notification_title">Promemoria PackPilot: %1$s</string>
+    <string name="notification_body_progress">%1$d di %2$d elementi pronti (%3$d%%).</string>
+    <string name="notification_action_open">Apri</string>
+    <string name="notification_channel_name">Promemoria PackPilot</string>
+    <string name="notification_channel_description">Ti ricorda di preparare in tempo</string>
+    <string name="settings_language_title">Lingua</string>
+    <string name="settings_language_description">Scegli la lingua dell\'app.</string>
+    <string name="language_picker_title">Scegli lingua</string>
+    <string name="language_picker_description">Quale lingua vuoi usare?</string>
+    <string name="language_system_default">Usa sistema</string>
+    <string name="language_system">Sistema</string>
+</resources>

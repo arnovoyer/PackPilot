@@ -1,6 +1,8 @@
 package com.packapp.ui
 
 import android.app.Application
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.packapp.data.ActivityEventEntity
@@ -40,6 +42,15 @@ enum class ThemeMode {
     SYSTEM,
     LIGHT,
     DARK
+}
+
+enum class AppLanguage(val tag: String) {
+    SYSTEM("system"),
+    DE("de"),
+    EN("en"),
+    ES("es"),
+    FR("fr"),
+    IT("it")
 }
 
 enum class HomeSortMode {
@@ -117,7 +128,8 @@ data class AccountUiState(
 data class SettingsUiState(
     val designMode: DesignMode = DesignMode.MINIMAL,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
-    val luggageLimitKg: Int = 10
+    val luggageLimitKg: Int = 10,
+    val language: AppLanguage = AppLanguage.SYSTEM
 )
 
 data class FirstOpenSetupDialogState(
@@ -164,6 +176,7 @@ private data class PerformanceMetrics(
 class AppViewModel(application: Application) : AndroidViewModel(application) {
     private companion object {
         const val PREF_KEY_CONFIGURED_LIST_IDS = "configured_list_ids"
+        const val PREF_KEY_LANGUAGE = "language"
     }
 
     private val app = application
@@ -179,6 +192,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val showOnboardingMutable = MutableStateFlow(!prefs.getBoolean("onboarding_seen", false))
     val showOnboarding: StateFlow<Boolean> = showOnboardingMutable.asStateFlow()
 
+    private val showLanguagePickerMutable = MutableStateFlow(prefs.getString(PREF_KEY_LANGUAGE, null) == null)
+    val showLanguagePicker: StateFlow<Boolean> = showLanguagePickerMutable.asStateFlow()
+
     private val firstOpenSetupDialogMutable = MutableStateFlow<FirstOpenSetupDialogState?>(null)
     val firstOpenSetupDialog: StateFlow<FirstOpenSetupDialogState?> = firstOpenSetupDialogMutable.asStateFlow()
 
@@ -190,7 +206,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             themeMode = prefs.getString("theme_mode", ThemeMode.SYSTEM.name)
                 ?.let { value -> ThemeMode.entries.find { it.name == value } }
                 ?: ThemeMode.SYSTEM,
-            luggageLimitKg = prefs.getInt("luggage_limit_kg", 10)
+            luggageLimitKg = prefs.getInt("luggage_limit_kg", 10),
+            language = prefs.getString(PREF_KEY_LANGUAGE, AppLanguage.SYSTEM.tag)
+                ?.let { code -> AppLanguage.entries.find { it.tag == code } }
+                ?: AppLanguage.SYSTEM
         )
     )
     val settingsUiState: StateFlow<SettingsUiState> = settingsMutable.asStateFlow()
@@ -199,6 +218,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val detailInputState = MutableStateFlow(DetailUiState())
 
     init {
+        applyLanguage(settingsMutable.value.language)
         synchronizeAllReminderWorkers()
     }
 
@@ -384,6 +404,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val safeValue = value.coerceIn(1, 99)
         settingsMutable.value = settingsMutable.value.copy(luggageLimitKg = safeValue)
         prefs.edit().putInt("luggage_limit_kg", safeValue).apply()
+    }
+
+    fun setLanguage(language: AppLanguage) {
+        settingsMutable.value = settingsMutable.value.copy(language = language)
+        prefs.edit().putString(PREF_KEY_LANGUAGE, language.tag).apply()
+        applyLanguage(language)
+        showLanguagePickerMutable.value = false
     }
 
     fun setRemindersEnabled(enabled: Boolean) {
@@ -838,6 +865,15 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             digitsOnly.length <= 2 -> digitsOnly
             else -> digitsOnly.take(2) + ":" + digitsOnly.drop(2).take(2)
         }
+    }
+
+    private fun applyLanguage(language: AppLanguage) {
+        val locales = if (language == AppLanguage.SYSTEM) {
+            LocaleListCompat.getEmptyLocaleList()
+        } else {
+            LocaleListCompat.forLanguageTags(language.tag)
+        }
+        AppCompatDelegate.setApplicationLocales(locales)
     }
 
     private fun formatReminderDateInput(triggerAtMillis: Long?): String {

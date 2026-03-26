@@ -27,3 +27,7 @@ Thumbs.db
 
 # External redirected build cache path (if accidentally created in repo)
 .packapp-build/
+
+
+
+.gradle/
