@@ -24,6 +24,12 @@
     <string name="language_picker_description">Que idioma quieres usar?</string>
     <string name="language_system_default">Usar sistema</string>
     <string name="language_system">Sistema</string>
+    <string name="language_save_button">Guardar idioma</string>
+    <string name="language_de">Aleman</string>
+    <string name="language_en">Ingles</string>
+    <string name="language_es">Espanol</string>
+    <string name="language_fr">Frances</string>
+    <string name="language_it">Italiano</string>
     <string name="cd_add_list">Agregar lista</string>
     <string name="cd_add_item">Agregar item</string>
     <string name="nav_lists">Listas</string>

@@ -99,6 +99,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.core.os.ConfigurationCompat
 import com.packapp.data.ActivityEventEntity
 import com.packapp.data.PackingItemEntity
 import com.packapp.data.PackingListEntity
@@ -203,6 +204,7 @@ fun PackPilotRoot(viewModel: AppViewModel = viewModel()) {
             BottomTab.PACKING -> {
                 DetailScreen(
                     uiState = detailUi,
+                    appLanguage = settingsUi.language,
                     contentPadding = innerPadding,
                     onBack = viewModel::closeList,
                     onTogglePacked = viewModel::togglePacked,
@@ -219,12 +221,17 @@ fun PackPilotRoot(viewModel: AppViewModel = viewModel()) {
                 onDesignModeSelected = viewModel::setDesignMode,
                 onThemeModeSelected = viewModel::setThemeMode,
                 onLuggageLimitKgChanged = viewModel::setLuggageLimitKg,
-                onLanguageSelected = viewModel::setLanguage
+                onPendingLanguageSelected = viewModel::selectPendingLanguage,
+                onCommitLanguageSelection = viewModel::commitPendingLanguage
             )
         }
 
         if (showLanguagePicker) {
-            LanguagePickerDialog(onSelect = viewModel::setLanguage)
+            LanguagePickerDialog(
+                selectedLanguage = settingsUi.pendingLanguage,
+                onSelect = viewModel::selectPendingLanguage,
+                onConfirm = viewModel::commitPendingLanguage
+            )
         }
 
         if (showAddListDialog) {
@@ -582,6 +589,7 @@ private fun ListCard(
 @Composable
 private fun DetailScreen(
     uiState: DetailUiState,
+    appLanguage: AppLanguage,
     contentPadding: PaddingValues,
     onBack: () -> Unit,
     onTogglePacked: (PackingItemEntity, Boolean) -> Unit,
@@ -626,8 +634,16 @@ private fun DetailScreen(
     var reminderDate by remember(uiState.list.id) {
         mutableStateOf(formatReminderDateForInput(uiState.list.reminderTriggerAtMillis))
     }
+    val appLocale = remember(appLanguage) { appLanguage.toLocale() }
     var reminderTime by remember(uiState.list.id) {
-        mutableStateOf(formatReminderTimeForInput(uiState.list.reminderTriggerAtMillis, uiState.list.reminderHour, uiState.list.reminderMinute))
+        mutableStateOf(
+            formatReminderTimeForInput(
+                uiState.list.reminderTriggerAtMillis,
+                uiState.list.reminderHour,
+                uiState.list.reminderMinute,
+                appLocale
+            )
+        )
     }
     var automationExpanded by rememberSaveable(uiState.list.id) { mutableStateOf(false) }
     val context = LocalContext.current
@@ -788,7 +804,7 @@ private fun DetailScreen(
                                         initialHour = initialHour,
                                         initialMinute = initialMinute
                                     ) { selectedHour, selectedMinute ->
-                                        reminderTime = autoInsertTimeColon(String.format(Locale.getDefault(), "%02d%02d", selectedHour, selectedMinute))
+                                        reminderTime = autoInsertTimeColon(String.format(appLocale, "%02d%02d", selectedHour, selectedMinute))
                                     }
                                 }
                             )
@@ -825,6 +841,7 @@ private fun DetailScreen(
         item {
             WeatherCard(
                 weather = uiState.weather,
+                appLanguage = appLanguage,
                 forecastEpochDay = uiState.list.weatherForecastEpochDay,
                 suggestions = uiState.weatherSuggestions,
                 loading = uiState.weatherLoading,
@@ -876,12 +893,14 @@ private fun DetailScreen(
 @Composable
 private fun WeatherCard(
     weather: WeatherSnapshot?,
+    appLanguage: AppLanguage,
     forecastEpochDay: Long?,
     suggestions: List<String>,
     loading: Boolean,
     error: String?,
     onRefresh: () -> Unit
 ) {
+    val appLocale = remember(appLanguage) { appLanguage.toLocale() }
     Surface(
         tonalElevation = 2.dp,
         shape = MaterialTheme.shapes.large,
@@ -902,7 +921,7 @@ private fun WeatherCard(
 
             if (weather != null) {
                 Text(
-                    text = stringResource(R.string.weather_updated_at, formatUpdatedTime(weather.fetchedAt)),
+                    text = stringResource(R.string.weather_updated_at, formatUpdatedTime(weather.fetchedAt, appLocale)),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.fillMaxWidth()
@@ -925,7 +944,7 @@ private fun WeatherCard(
                             Text(
                                 text = stringResource(
                                     R.string.weather_forecast_for,
-                                    LocalDate.ofEpochDay(it).format(DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.getDefault()))
+                                    LocalDate.ofEpochDay(it).format(DateTimeFormatter.ofPattern("dd.MM.yyyy", appLocale))
                                 ),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1190,7 +1209,11 @@ private fun PickerField(
 }
 
 @Composable
-private fun LanguagePickerDialog(onSelect: (AppLanguage) -> Unit) {
+private fun LanguagePickerDialog(
+    selectedLanguage: AppLanguage,
+    onSelect: (AppLanguage) -> Unit,
+    onConfirm: () -> Unit
+) {
     androidx.compose.material3.AlertDialog(
         onDismissRequest = { },
         title = { Text(stringResource(R.string.language_picker_title)) },
@@ -1200,18 +1223,21 @@ private fun LanguagePickerDialog(onSelect: (AppLanguage) -> Unit) {
                 AppLanguage.entries
                     .filter { it != AppLanguage.SYSTEM }
                     .forEach { language ->
-                        OutlinedButton(
+                        FilterChip(
+                            selected = selectedLanguage == language,
                             onClick = { onSelect(language) },
+                            label = { Text(languageLabel(language)) },
                             modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(languageLabel(language))
-                        }
+                        )
                     }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSelect(AppLanguage.SYSTEM) }) {
-                Text(stringResource(R.string.language_system_default))
+            Button(
+                onClick = onConfirm,
+                enabled = selectedLanguage != AppLanguage.SYSTEM
+            ) {
+                Text(stringResource(R.string.language_save_button))
             }
         }
     )
@@ -1220,11 +1246,11 @@ private fun LanguagePickerDialog(onSelect: (AppLanguage) -> Unit) {
 @Composable
 private fun languageLabel(language: AppLanguage): String = when (language) {
     AppLanguage.SYSTEM -> stringResource(R.string.language_system)
-    AppLanguage.DE -> "Deutsch"
-    AppLanguage.EN -> "English"
-    AppLanguage.ES -> "Espanol"
-    AppLanguage.FR -> "Francais"
-    AppLanguage.IT -> "Italiano"
+    AppLanguage.DE -> stringResource(R.string.language_de)
+    AppLanguage.EN -> stringResource(R.string.language_en)
+    AppLanguage.ES -> stringResource(R.string.language_es)
+    AppLanguage.FR -> stringResource(R.string.language_fr)
+    AppLanguage.IT -> stringResource(R.string.language_it)
 }
 
 private fun formatDuration(seconds: Long?): String {
@@ -1249,15 +1275,20 @@ private fun formatReminderDateForInput(triggerAtMillis: Long?): String {
     return localDate.format(isoDateFormatter)
 }
 
-private fun formatReminderTimeForInput(triggerAtMillis: Long?, fallbackHour: Int, fallbackMinute: Int): String {
+private fun formatReminderTimeForInput(
+    triggerAtMillis: Long?,
+    fallbackHour: Int,
+    fallbackMinute: Int,
+    locale: Locale
+): String {
     if (triggerAtMillis == null) {
-        return String.format(Locale.getDefault(), "%02d:%02d", fallbackHour, fallbackMinute)
+        return String.format(locale, "%02d:%02d", fallbackHour, fallbackMinute)
     }
     val localDateTime = LocalDateTime.ofInstant(
         Date(triggerAtMillis).toInstant(),
         ZoneId.systemDefault()
     )
-    return String.format(Locale.getDefault(), "%02d:%02d", localDateTime.hour, localDateTime.minute)
+    return String.format(locale, "%02d:%02d", localDateTime.hour, localDateTime.minute)
 }
 
 private fun parseEpochDayFromInput(value: String): Long? {
@@ -1298,8 +1329,8 @@ private fun parseReminderTriggerMillis(dateValue: String, timeValue: String): Lo
     return localDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 }
 
-private fun formatUpdatedTime(timestamp: Long): String {
-    return SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(timestamp))
+private fun formatUpdatedTime(timestamp: Long, locale: Locale): String {
+    return SimpleDateFormat("HH:mm", locale).format(Date(timestamp))
 }
 
 private fun showDatePickerDialog(
@@ -1479,17 +1510,31 @@ private fun formatEventTime(timestamp: Long, resources: Resources): String {
     val eventDate = Date(timestamp)
     val now = Calendar.getInstance()
     val eventCal = Calendar.getInstance().apply { timeInMillis = timestamp }
+    val locale = appLocale(resources)
 
     val datePrefix = when {
         now.get(Calendar.YEAR) == eventCal.get(Calendar.YEAR) &&
             now.get(Calendar.DAY_OF_YEAR) == eventCal.get(Calendar.DAY_OF_YEAR) -> resources.getString(R.string.time_today)
         now.get(Calendar.YEAR) == eventCal.get(Calendar.YEAR) &&
             now.get(Calendar.DAY_OF_YEAR) - eventCal.get(Calendar.DAY_OF_YEAR) == 1 -> resources.getString(R.string.time_yesterday)
-        else -> SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(eventDate)
+        else -> SimpleDateFormat("dd.MM.yyyy", locale).format(eventDate)
     }
 
-    val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(eventDate)
+    val time = SimpleDateFormat("HH:mm", locale).format(eventDate)
     return resources.getString(R.string.time_date_compound, datePrefix, time)
+}
+
+private fun appLocale(resources: Resources): Locale {
+    return ConfigurationCompat.getLocales(resources.configuration)[0] ?: Locale.getDefault()
+}
+
+private fun AppLanguage.toLocale(): Locale = when (this) {
+    AppLanguage.SYSTEM -> Locale.getDefault()
+    AppLanguage.DE -> Locale.forLanguageTag("de")
+    AppLanguage.EN -> Locale.forLanguageTag("en")
+    AppLanguage.ES -> Locale.forLanguageTag("es")
+    AppLanguage.FR -> Locale.forLanguageTag("fr")
+    AppLanguage.IT -> Locale.forLanguageTag("it")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1500,7 +1545,8 @@ private fun SettingsScreen(
     onDesignModeSelected: (DesignMode) -> Unit,
     onThemeModeSelected: (ThemeMode) -> Unit,
     onLuggageLimitKgChanged: (Int) -> Unit,
-    onLanguageSelected: (AppLanguage) -> Unit
+    onPendingLanguageSelected: (AppLanguage) -> Unit,
+    onCommitLanguageSelection: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -1581,12 +1627,19 @@ private fun SettingsScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     AppLanguage.entries.forEach { language ->
                         FilterChip(
-                            selected = uiState.language == language,
-                            onClick = { onLanguageSelected(language) },
+                            selected = uiState.pendingLanguage == language,
+                            onClick = { onPendingLanguageSelected(language) },
                             label = { Text(languageLabel(language)) },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
+                }
+                Button(
+                    onClick = onCommitLanguageSelection,
+                    enabled = uiState.pendingLanguage != uiState.language,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.language_save_button))
                 }
 
                 HorizontalDivider()

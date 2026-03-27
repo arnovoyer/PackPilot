@@ -130,7 +130,8 @@ data class SettingsUiState(
     val designMode: DesignMode = DesignMode.MINIMAL,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val luggageLimitKg: Int = 10,
-    val language: AppLanguage = AppLanguage.SYSTEM
+    val language: AppLanguage = AppLanguage.SYSTEM,
+    val pendingLanguage: AppLanguage = AppLanguage.SYSTEM
 )
 
 data class FirstOpenSetupDialogState(
@@ -199,6 +200,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val firstOpenSetupDialogMutable = MutableStateFlow<FirstOpenSetupDialogState?>(null)
     val firstOpenSetupDialog: StateFlow<FirstOpenSetupDialogState?> = firstOpenSetupDialogMutable.asStateFlow()
 
+    private val initialLanguage = prefs.getString(PREF_KEY_LANGUAGE, AppLanguage.SYSTEM.tag)
+        ?.let { code -> AppLanguage.entries.find { it.tag == code } }
+        ?: AppLanguage.SYSTEM
+
     private val settingsMutable = MutableStateFlow(
         SettingsUiState(
             designMode = prefs.getString("design_mode", DesignMode.MINIMAL.name)
@@ -208,9 +213,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 ?.let { value -> ThemeMode.entries.find { it.name == value } }
                 ?: ThemeMode.SYSTEM,
             luggageLimitKg = prefs.getInt("luggage_limit_kg", 10),
-            language = prefs.getString(PREF_KEY_LANGUAGE, AppLanguage.SYSTEM.tag)
-                ?.let { code -> AppLanguage.entries.find { it.tag == code } }
-                ?: AppLanguage.SYSTEM
+            language = initialLanguage,
+            pendingLanguage = initialLanguage
         )
     )
     val settingsUiState: StateFlow<SettingsUiState> = settingsMutable.asStateFlow()
@@ -407,11 +411,20 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         prefs.edit().putInt("luggage_limit_kg", safeValue).apply()
     }
 
-    fun setLanguage(language: AppLanguage) {
-        settingsMutable.value = settingsMutable.value.copy(language = language)
-        prefs.edit().putString(PREF_KEY_LANGUAGE, language.tag).apply()
+    fun selectPendingLanguage(language: AppLanguage) {
+        settingsMutable.update { it.copy(pendingLanguage = language) }
+    }
+
+    fun commitPendingLanguage() {
+        val language = settingsMutable.value.pendingLanguage
+        settingsMutable.update { it.copy(language = language) }
+        prefs.edit().putString(PREF_KEY_LANGUAGE, language.tag).commit()
         applyLanguage(language)
         showLanguagePickerMutable.value = false
+    }
+
+    fun resetPendingLanguage() {
+        settingsMutable.update { it.copy(pendingLanguage = it.language) }
     }
 
     fun setRemindersEnabled(enabled: Boolean) {
