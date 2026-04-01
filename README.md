@@ -1,6 +1,6 @@
 #PackPilot ist noch in der Entwicklung
 
-## Entstand daraus, dass immer wieder für Wettkämpfe und Ausflüge gepackt werden musste und Sachen vergessen wurden.
+## 
 
 ### Bis jetzt wurden einige Sachen umgesetzt:
 - Custom Listen
@@ -9,5 +9,5 @@
 - Push-Benachrichtigungen
 - etc.
 
-### Wenn Bugs oder Probleme auftreten kontaktiere mich gerne über meine Website. arnovoyer.com
+### Wenn Bugs oder Probleme auftreten kontaktiere mich gerne über meine Website (https://arnovoyer.com) oder über die Email in meinem Profil
 
